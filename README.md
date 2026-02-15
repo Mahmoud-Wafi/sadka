@@ -188,6 +188,22 @@ dist
 - `VITE_API_BASE_URL=https://<backend-domain>/api`
 - `VITE_WS_BASE_URL=wss://<backend-domain>/ws/live/`
 
+## الروابط الحالية للمشروع
+
+- Frontend (Vercel): `https://sadka-ten.vercel.app/`
+- Backend (Koyeb): `https://loose-whale-sadka12-a0d22c29.koyeb.app/`
+
+### قيم البيئة المطابقة لهذه الروابط
+
+- Backend:
+  - `DJANGO_ALLOWED_HOSTS=127.0.0.1,localhost,loose-whale-sadka12-a0d22c29.koyeb.app`
+  - `CORS_ALLOW_ALL=False`
+  - `CORS_ALLOWED_ORIGINS=http://localhost:5173,https://sadka-ten.vercel.app`
+  - `CSRF_TRUSTED_ORIGINS=https://loose-whale-sadka12-a0d22c29.koyeb.app,https://sadka-ten.vercel.app`
+- Frontend:
+  - `VITE_API_BASE_URL=https://loose-whale-sadka12-a0d22c29.koyeb.app/api`
+  - `VITE_WS_BASE_URL=wss://loose-whale-sadka12-a0d22c29.koyeb.app/ws/live/`
+
 ## ملاحظات إنتاجية
 
 - يفضّل استخدام PostgreSQL في الإنتاج بدل SQLite عبر `DATABASE_URL`.

@@ -13,10 +13,39 @@ def env_bool(name: str, default: bool = False) -> bool:
     return os.getenv(name, str(default)).strip().lower() in {"1", "true", "yes", "on"}
 
 
+def env_list(name: str, default: list[str] | None = None) -> list[str]:
+    value = os.getenv(name, "")
+    if not value and default is not None:
+        return list(default)
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def clean_host(value: str) -> str:
+    host = value.strip().replace("https://", "").replace("http://", "")
+    return host.split("/")[0].strip()
+
+
+def add_unique(items: list[str], value: str) -> None:
+    if value and value not in items:
+        items.append(value)
+
+
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "change-me-in-production")
 DEBUG = env_bool("DJANGO_DEBUG", True)
 
-ALLOWED_HOSTS = [host.strip() for host in os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if host.strip()]
+ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", ["127.0.0.1", "localhost"])
+
+# مزودات النشر تضيف غالبًا دومين عام في متغيرات البيئة التالية.
+PUBLIC_HOST_ENV_VARS = [
+    "KOYEB_PUBLIC_DOMAIN",
+    "RENDER_EXTERNAL_HOSTNAME",
+    "RAILWAY_PUBLIC_DOMAIN",
+]
+
+for var_name in PUBLIC_HOST_ENV_VARS:
+    for raw_host in env_list(var_name):
+        host = clean_host(raw_host)
+        add_unique(ALLOWED_HOSTS, host)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -117,17 +146,15 @@ REST_FRAMEWORK = {
 }
 
 CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL", True)
-CORS_ALLOWED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
-    if origin.strip()
-]
+CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
 
-CSRF_TRUSTED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
-    if origin.strip()
-]
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
+for host in ALLOWED_HOSTS:
+    if host.startswith("."):
+        continue
+    if host in {"127.0.0.1", "localhost"}:
+        continue
+    add_unique(CSRF_TRUSTED_ORIGINS, f"https://{host}")
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
