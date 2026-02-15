@@ -1,7 +1,21 @@
 import axios from "axios";
 
+const LOCAL_API_BASE_URL = "http://127.0.0.1:8000/api";
+const PUBLIC_API_BASE_URL = "https://loose-whale-sadka12-a0d22c29.koyeb.app/api";
+
+function isLocalBrowserHost() {
+  if (typeof window === "undefined") {
+    return true;
+  }
+
+  return ["localhost", "127.0.0.1", "0.0.0.0"].includes(window.location.hostname);
+}
+
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+  || (isLocalBrowserHost() ? LOCAL_API_BASE_URL : PUBLIC_API_BASE_URL);
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/api",
+  baseURL: API_BASE_URL,
   timeout: 10000
 });
 
@@ -36,6 +50,14 @@ export const getJuzContent = async (juzNumber) => {
 };
 
 export const parseApiError = (error) => {
+  if (error?.code === "ECONNABORTED") {
+    return "انتهت مهلة الاتصال بالخادم. حاول مرة أخرى.";
+  }
+
+  if (!error?.response || error?.message === "Network Error") {
+    return "تعذر الاتصال بالخادم. تحقق من الإنترنت ثم أعد المحاولة.";
+  }
+
   if (error?.response?.data?.detail) {
     return error.response.data.detail;
   }

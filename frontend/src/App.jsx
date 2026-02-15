@@ -7,6 +7,7 @@ import StatsSection from "./components/StatsSection";
 import TasbeehSection from "./components/TasbeehSection";
 import DeveloperFooter from "./components/DeveloperFooter";
 import {
+  API_BASE_URL,
   getCurrentKhatma,
   getStats,
   getTasbeeh,
@@ -26,8 +27,7 @@ function buildLiveWebSocketUrl() {
     return explicit;
   }
 
-  const apiBase = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/api";
-  const parsed = new URL(apiBase);
+  const parsed = new URL(API_BASE_URL);
   parsed.protocol = parsed.protocol === "https:" ? "wss:" : "ws:";
   parsed.pathname = "/ws/live/";
   parsed.search = "";
