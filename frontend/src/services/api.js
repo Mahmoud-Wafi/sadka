@@ -16,7 +16,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000
+  timeout: 12000
 });
 
 export const getCurrentKhatma = async () => {
@@ -26,6 +26,11 @@ export const getCurrentKhatma = async () => {
 
 export const reserveJuz = async (payload) => {
   const { data } = await api.post("/reserve/", payload);
+  return data;
+};
+
+export const completeJuz = async (payload) => {
+  const { data } = await api.post("/complete-juz/", payload);
   return data;
 };
 
@@ -39,13 +44,48 @@ export const getTasbeeh = async () => {
   return data;
 };
 
-export const incrementTasbeeh = async (phrase) => {
-  const { data } = await api.post("/tasbeeh/", { phrase });
+export const incrementTasbeeh = async (payload) => {
+  const { data } = await api.post("/tasbeeh/", payload);
   return data;
 };
 
 export const getJuzContent = async (juzNumber) => {
   const { data } = await api.get(`/juz/${juzNumber}/`);
+  return data;
+};
+
+export const getActivityFeed = async (limit = 30) => {
+  const { data } = await api.get("/activity/", { params: { limit } });
+  return data;
+};
+
+export const getDuaWall = async () => {
+  const { data } = await api.get("/dua-wall/");
+  return data;
+};
+
+export const createDua = async (payload) => {
+  const { data } = await api.post("/dua-wall/", payload);
+  return data;
+};
+
+export const getProfileStats = async (name) => {
+  const { data } = await api.get("/profile-stats/", { params: { name } });
+  return data;
+};
+
+export const getKhatmaHistory = async (limit = 20) => {
+  const { data } = await api.get("/khatma-history/", { params: { limit } });
+  return data;
+};
+
+export const getDailyWird = async () => {
+  const { data } = await api.get("/daily-wird/");
+  return data;
+};
+
+export const getReminders = async (name) => {
+  const { data } = await api.get("/reminders/", { params: { name } });
   return data;
 };
 

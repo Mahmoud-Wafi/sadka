@@ -1,18 +1,40 @@
+from __future__ import annotations
+
 from rest_framework import serializers
 
-from .models import Juz, Khatma, TasbeehCounter
+from .models import ActivityEvent, DuaMessage, Juz, Khatma, ParticipantProgress, TasbeehCounter
 
 
 class JuzSerializer(serializers.ModelSerializer):
     is_reserved = serializers.SerializerMethodField()
+    is_completed = serializers.SerializerMethodField()
+    is_expired = serializers.SerializerMethodField()
     read_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Juz
-        fields = ["id", "juz_number", "reserved_by", "reserved_at", "is_reserved", "read_url"]
+        fields = [
+            "id",
+            "juz_number",
+            "reserved_by",
+            "reserved_at",
+            "reservation_expires_at",
+            "completed_by",
+            "completed_at",
+            "is_reserved",
+            "is_completed",
+            "is_expired",
+            "read_url",
+        ]
 
     def get_is_reserved(self, obj: Juz) -> bool:
-        return bool(obj.reserved_by)
+        return obj.is_reserved
+
+    def get_is_completed(self, obj: Juz) -> bool:
+        return obj.is_completed
+
+    def get_is_expired(self, obj: Juz) -> bool:
+        return obj.is_expired
 
     def get_read_url(self, obj: Juz) -> str:
         return f"https://quran.com/juz/{obj.juz_number}"
@@ -53,6 +75,10 @@ class ReserveSerializer(serializers.Serializer):
         return value
 
 
+class CompleteJuzSerializer(ReserveSerializer):
+    pass
+
+
 class TasbeehCounterSerializer(serializers.ModelSerializer):
     class Meta:
         model = TasbeehCounter
@@ -68,9 +94,66 @@ class TasbeehIncrementSerializer(serializers.Serializer):
             "max_length": "نص الذكر طويل جدًا.",
         },
     )
+    name = serializers.CharField(max_length=120, required=False, allow_blank=True, default="")
 
     def validate_phrase(self, value: str) -> str:
         value = value.strip()
         if not value:
             raise serializers.ValidationError("الذكر مطلوب.")
         return value
+
+    def validate_name(self, value: str) -> str:
+        return value.strip()
+
+
+class ActivityEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ActivityEvent
+        fields = ["id", "event_type", "message", "actor_name", "khatma_number", "juz_number", "created_at"]
+
+
+class DuaMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DuaMessage
+        fields = ["id", "name", "content", "created_at"]
+        read_only_fields = ["id", "created_at"]
+
+    def validate_name(self, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("الاسم مطلوب.")
+        return value
+
+    def validate_content(self, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("نص الدعاء مطلوب.")
+        if len(value) < 5:
+            raise serializers.ValidationError("الدعاء قصير جدًا.")
+        return value
+
+
+class ProfileNameSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=120)
+
+    def validate_name(self, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("الاسم مطلوب.")
+        return value
+
+
+class ParticipantProgressSerializer(serializers.ModelSerializer):
+    badges = serializers.ListField(child=serializers.DictField(), read_only=True)
+
+    class Meta:
+        model = ParticipantProgress
+        fields = [
+            "name",
+            "reservations_count",
+            "completions_count",
+            "tasbeeh_count",
+            "updated_at",
+            "badges",
+        ]
+
