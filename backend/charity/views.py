@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import ActivityEvent, DuaMessage, Juz, Khatma, TasbeehCounter
+from .models import ActivityEvent, DuaMessage, Juz, Khatma, ParticipantProgress, TasbeehCounter, TeamGroup
 from .realtime import broadcast_live_event
 from .serializers import (
     ActivityEventSerializer,
@@ -17,20 +17,27 @@ from .serializers import (
     KhatmaSerializer,
     ProfileNameSerializer,
     ReserveSerializer,
+    TeamCreateSerializer,
+    TeamJoinSerializer,
     TasbeehCounterSerializer,
     TasbeehIncrementSerializer,
 )
 from .services import (
     add_dua_message,
     complete_juz,
+    create_team,
     ensure_default_tasbeeh_phrases,
     fetch_juz_content,
     get_daily_wird,
+    get_invite_leaderboard,
     get_khatma_history,
     get_or_create_current_khatma,
     get_pending_reminders,
     get_profile_stats,
+    get_ramadan_impact,
+    get_teams_leaderboard,
     increment_tasbeeh_phrase,
+    join_team,
     release_expired_reservations,
     reservation_expiry_hours,
     reserve_juz,
@@ -70,12 +77,16 @@ class ReserveJuzView(APIView):
             result = reserve_juz(
                 juz_number=serializer.validated_data["juz_number"],
                 name=serializer.validated_data["name"],
+                ref_code=serializer.validated_data.get("ref_code", ""),
             )
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         reserved_serializer = JuzSerializer(result["reserved_juz"])
-        participant = get_profile_stats(serializer.validated_data["name"])
+        participant = get_profile_stats(
+            serializer.validated_data["name"],
+            ref_code=serializer.validated_data.get("ref_code", ""),
+        )
 
         broadcast_live_event(
             "khatma_reserved",
@@ -110,12 +121,16 @@ class CompleteJuzView(APIView):
             result = complete_juz(
                 juz_number=serializer.validated_data["juz_number"],
                 name=serializer.validated_data["name"],
+                ref_code=serializer.validated_data.get("ref_code", ""),
             )
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         completed_serializer = JuzSerializer(result["completed_juz"])
-        participant = get_profile_stats(serializer.validated_data["name"])
+        participant = get_profile_stats(
+            serializer.validated_data["name"],
+            ref_code=serializer.validated_data.get("ref_code", ""),
+        )
 
         broadcast_live_event(
             "juz_completed",
@@ -162,6 +177,8 @@ class StatsView(APIView):
             reservation_expires_at__gt=now,
             reservation_expires_at__lte=now + timedelta(minutes=60),
         ).count()
+        total_referred_participants = ParticipantProgress.objects.exclude(referred_by__isnull=True).count()
+        teams_count = TeamGroup.objects.count()
 
         return Response(
             {
@@ -171,6 +188,8 @@ class StatsView(APIView):
                 "completed_count": completed_count,
                 "total_participants": total_participants,
                 "due_soon_count": due_soon_count,
+                "total_referred_participants": total_referred_participants,
+                "teams_count": teams_count,
             }
         )
 
@@ -191,6 +210,7 @@ class TasbeehView(APIView):
             counter = increment_tasbeeh_phrase(
                 phrase=serializer.validated_data["phrase"],
                 name=serializer.validated_data.get("name", ""),
+                ref_code=serializer.validated_data.get("ref_code", ""),
             )
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
@@ -232,6 +252,7 @@ class DuaWallView(APIView):
             dua = add_dua_message(
                 name=serializer.validated_data["name"],
                 content=serializer.validated_data["content"],
+                ref_code=serializer.validated_data.get("ref_code", ""),
             )
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
@@ -252,7 +273,10 @@ class ProfileStatsView(APIView):
         serializer = ProfileNameSerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
         try:
-            data = get_profile_stats(serializer.validated_data["name"])
+            data = get_profile_stats(
+                serializer.validated_data["name"],
+                ref_code=serializer.validated_data.get("ref_code", ""),
+            )
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(data)
@@ -272,6 +296,83 @@ class KhatmaHistoryView(APIView):
 class DailyWirdView(APIView):
     def get(self, request):
         return Response(get_daily_wird())
+
+
+class InviteLeaderboardView(APIView):
+    def get(self, request):
+        try:
+            limit = int(request.query_params.get("limit", 20))
+        except ValueError:
+            limit = 20
+        limit = min(max(limit, 1), 100)
+        return Response(get_invite_leaderboard(limit=limit))
+
+
+class RamadanImpactView(APIView):
+    def get(self, request):
+        try:
+            inviters_limit = int(request.query_params.get("inviters_limit", 10))
+        except ValueError:
+            inviters_limit = 10
+        try:
+            teams_limit = int(request.query_params.get("teams_limit", 8))
+        except ValueError:
+            teams_limit = 8
+
+        inviters_limit = min(max(inviters_limit, 1), 100)
+        teams_limit = min(max(teams_limit, 1), 100)
+        return Response(get_ramadan_impact(inviter_limit=inviters_limit, team_limit=teams_limit))
+
+
+class TeamListCreateView(APIView):
+    def get(self, request):
+        try:
+            limit = int(request.query_params.get("limit", 20))
+        except ValueError:
+            limit = 20
+        limit = min(max(limit, 1), 100)
+        return Response(get_teams_leaderboard(limit=limit))
+
+    def post(self, request):
+        serializer = TeamCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            team = create_team(
+                owner_name=serializer.validated_data["owner_name"],
+                team_name=serializer.validated_data["team_name"],
+                target_points=serializer.validated_data.get("target_points", 300),
+                ref_code=serializer.validated_data.get("ref_code", ""),
+            )
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        broadcast_live_event(
+            "team_created",
+            {"name": team["name"], "code": team["code"], "members_count": team["members_count"]},
+        )
+        return Response(team, status=status.HTTP_201_CREATED)
+
+
+class TeamJoinView(APIView):
+    def post(self, request):
+        serializer = TeamJoinSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            team = join_team(
+                name=serializer.validated_data["name"],
+                team_code=serializer.validated_data["team_code"],
+                ref_code=serializer.validated_data.get("ref_code", ""),
+            )
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        broadcast_live_event(
+            "team_joined",
+            {"name": team["name"], "code": team["code"], "members_count": team["members_count"]},
+        )
+        return Response(team, status=status.HTTP_200_OK)
 
 
 class ReminderView(APIView):

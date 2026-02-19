@@ -67,12 +67,16 @@ class ReserveSerializer(serializers.Serializer):
             "max_length": "الاسم طويل جدًا.",
         },
     )
+    ref_code = serializers.CharField(max_length=16, required=False, allow_blank=True, default="")
 
     def validate_name(self, value: str) -> str:
         value = value.strip()
         if not value:
             raise serializers.ValidationError("الاسم لا يمكن أن يكون فارغًا.")
         return value
+
+    def validate_ref_code(self, value: str) -> str:
+        return "".join(ch for ch in value.strip().upper() if ch.isalnum())[:16]
 
 
 class CompleteJuzSerializer(ReserveSerializer):
@@ -95,6 +99,7 @@ class TasbeehIncrementSerializer(serializers.Serializer):
         },
     )
     name = serializers.CharField(max_length=120, required=False, allow_blank=True, default="")
+    ref_code = serializers.CharField(max_length=16, required=False, allow_blank=True, default="")
 
     def validate_phrase(self, value: str) -> str:
         value = value.strip()
@@ -105,6 +110,9 @@ class TasbeehIncrementSerializer(serializers.Serializer):
     def validate_name(self, value: str) -> str:
         return value.strip()
 
+    def validate_ref_code(self, value: str) -> str:
+        return "".join(ch for ch in value.strip().upper() if ch.isalnum())[:16]
+
 
 class ActivityEventSerializer(serializers.ModelSerializer):
     class Meta:
@@ -113,9 +121,11 @@ class ActivityEventSerializer(serializers.ModelSerializer):
 
 
 class DuaMessageSerializer(serializers.ModelSerializer):
+    ref_code = serializers.CharField(max_length=16, required=False, allow_blank=True, write_only=True, default="")
+
     class Meta:
         model = DuaMessage
-        fields = ["id", "name", "content", "created_at"]
+        fields = ["id", "name", "content", "created_at", "ref_code"]
         read_only_fields = ["id", "created_at"]
 
     def validate_name(self, value: str) -> str:
@@ -132,15 +142,22 @@ class DuaMessageSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("الدعاء قصير جدًا.")
         return value
 
+    def validate_ref_code(self, value: str) -> str:
+        return "".join(ch for ch in value.strip().upper() if ch.isalnum())[:16]
+
 
 class ProfileNameSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=120)
+    ref_code = serializers.CharField(max_length=16, required=False, allow_blank=True, default="")
 
     def validate_name(self, value: str) -> str:
         value = value.strip()
         if not value:
             raise serializers.ValidationError("الاسم مطلوب.")
         return value
+
+    def validate_ref_code(self, value: str) -> str:
+        return "".join(ch for ch in value.strip().upper() if ch.isalnum())[:16]
 
 
 class ParticipantProgressSerializer(serializers.ModelSerializer):
@@ -153,7 +170,51 @@ class ParticipantProgressSerializer(serializers.ModelSerializer):
             "reservations_count",
             "completions_count",
             "tasbeeh_count",
+            "dua_count",
             "updated_at",
+            "referral_code",
             "badges",
         ]
 
+
+class TeamCreateSerializer(serializers.Serializer):
+    team_name = serializers.CharField(max_length=120)
+    owner_name = serializers.CharField(max_length=120)
+    target_points = serializers.IntegerField(required=False, min_value=50, max_value=5000, default=300)
+    ref_code = serializers.CharField(max_length=16, required=False, allow_blank=True, default="")
+
+    def validate_team_name(self, value: str) -> str:
+        value = value.strip()
+        if len(value) < 3:
+            raise serializers.ValidationError("اسم الفريق قصير جدًا.")
+        return value
+
+    def validate_owner_name(self, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("اسم القائد مطلوب.")
+        return value
+
+    def validate_ref_code(self, value: str) -> str:
+        return "".join(ch for ch in value.strip().upper() if ch.isalnum())[:16]
+
+
+class TeamJoinSerializer(serializers.Serializer):
+    team_code = serializers.CharField(max_length=12)
+    name = serializers.CharField(max_length=120)
+    ref_code = serializers.CharField(max_length=16, required=False, allow_blank=True, default="")
+
+    def validate_team_code(self, value: str) -> str:
+        value = "".join(ch for ch in value.strip().upper() if ch.isalnum())
+        if not value:
+            raise serializers.ValidationError("رمز الفريق مطلوب.")
+        return value
+
+    def validate_name(self, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("الاسم مطلوب.")
+        return value
+
+    def validate_ref_code(self, value: str) -> str:
+        return "".join(ch for ch in value.strip().upper() if ch.isalnum())[:16]

@@ -7,7 +7,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import DuaMessage, Juz, Khatma, ParticipantProgress, TasbeehCounter
+from .models import DuaMessage, Juz, Khatma, ParticipantProgress, ReferralAction, TasbeehCounter, TeamMembership
 from .services import create_khatma_with_juz
 
 
@@ -94,6 +94,70 @@ class CharityApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["completions_count"], 1)
         self.assertGreaterEqual(len(response.data["badges"]), 2)
+        self.assertIn("referral_code", response.data)
+        self.assertIn("invite_link", response.data)
+
+    def test_referral_code_tracks_invited_actions(self):
+        inviter_profile = self.client.get(reverse("profile-stats"), {"name": "الداعي"})
+        self.assertEqual(inviter_profile.status_code, status.HTTP_200_OK)
+        ref_code = inviter_profile.data["referral_code"]
+
+        create_khatma_with_juz(1)
+        reserve_res = self.client.post(
+            reverse("reserve-juz"),
+            {"juz_number": 8, "name": "مدعو", "ref_code": ref_code},
+            format="json",
+        )
+        self.assertEqual(reserve_res.status_code, status.HTTP_201_CREATED)
+
+        invited = ParticipantProgress.objects.get(name="مدعو")
+        inviter = ParticipantProgress.objects.get(name="الداعي")
+        self.assertEqual(invited.referred_by_id, inviter.id)
+        self.assertEqual(
+            ReferralAction.objects.filter(inviter=inviter, invited=invited, action_type=ReferralAction.RESERVE).count(),
+            1,
+        )
+
+    def test_invite_leaderboard_returns_top_inviter(self):
+        inviter_profile = self.client.get(reverse("profile-stats"), {"name": "سفير"})
+        ref_code = inviter_profile.data["referral_code"]
+
+        create_khatma_with_juz(1)
+        self.client.post(reverse("reserve-juz"), {"juz_number": 2, "name": "صديق", "ref_code": ref_code}, format="json")
+        self.client.post(reverse("tasbeeh"), {"phrase": "سُبْحَانَ اللَّهِ", "name": "صديق", "ref_code": ref_code}, format="json")
+
+        leaderboard = self.client.get(reverse("invite-leaderboard"))
+        self.assertEqual(leaderboard.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(len(leaderboard.data), 1)
+        self.assertEqual(leaderboard.data[0]["name"], "سفير")
+        self.assertGreaterEqual(leaderboard.data[0]["invited_actions_count"], 1)
+
+    def test_team_create_join_and_impact(self):
+        create_team_res = self.client.post(
+            reverse("teams"),
+            {"team_name": "فريق العطاء", "owner_name": "قائد", "target_points": 400},
+            format="json",
+        )
+        self.assertEqual(create_team_res.status_code, status.HTTP_201_CREATED)
+        code = create_team_res.data["code"]
+
+        join_res = self.client.post(
+            reverse("team-join"),
+            {"team_code": code, "name": "عضو"},
+            format="json",
+        )
+        self.assertEqual(join_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(TeamMembership.objects.count(), 2)
+
+        listing = self.client.get(reverse("teams"))
+        self.assertEqual(listing.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(len(listing.data), 1)
+        self.assertEqual(listing.data[0]["name"], "فريق العطاء")
+
+        impact = self.client.get(reverse("ramadan-impact"))
+        self.assertEqual(impact.status_code, status.HTTP_200_OK)
+        self.assertIn("top_teams", impact.data)
+        self.assertIn("top_inviters", impact.data)
 
     @patch("charity.views.fetch_juz_content")
     def test_juz_content_endpoint_returns_selected_juz(self, mock_fetch):
@@ -110,4 +174,3 @@ class CharityApiTests(APITestCase):
         response = self.client.get(reverse("juz-content", kwargs={"juz_number": 7}))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["juz_number"], 7)
-

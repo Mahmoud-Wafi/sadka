@@ -5,27 +5,36 @@ import DeveloperFooter from "./components/DeveloperFooter";
 import DuaWallSection from "./components/DuaWallSection";
 import HeroSection from "./components/HeroSection";
 import InstallPrompt from "./components/InstallPrompt";
+import InviteHubSection from "./components/InviteHubSection";
+import InviteLeaderboardSection from "./components/InviteLeaderboardSection";
 import JuzReaderModal from "./components/JuzReaderModal";
 import KhatmaGrid from "./components/KhatmaGrid";
 import KhatmaHistorySection from "./components/KhatmaHistorySection";
 import ProfileStatsSection from "./components/ProfileStatsSection";
+import RamadanImpactSection from "./components/RamadanImpactSection";
 import ReminderSection from "./components/ReminderSection";
 import StatsSection from "./components/StatsSection";
 import TasbeehSection from "./components/TasbeehSection";
+import TeamChallengeSection from "./components/TeamChallengeSection";
 import {
   API_BASE_URL,
   completeJuz,
+  createTeam,
   createDua,
   getActivityFeed,
   getCurrentKhatma,
   getDailyWird,
   getDuaWall,
+  getInviteLeaderboard,
   getKhatmaHistory,
   getProfileStats,
+  getRamadanImpact,
   getReminders,
   getStats,
   getTasbeeh,
+  getTeams,
   incrementTasbeeh,
+  joinTeam,
   parseApiError,
   reserveJuz
 } from "./services/api";
@@ -37,6 +46,7 @@ const WS_MAX_RETRIES = 20;
 const REMINDER_INTERVAL_MS = 60000;
 const NOTIFICATIONS_STORAGE_KEY = "sadaqah_notifications_enabled";
 const NOTIFIED_REMINDERS_KEY = "sadaqah_notified_reminders";
+const REF_CODE_STORAGE_KEY = "sadaqah_ref_code";
 
 function buildLiveWebSocketUrl() {
   const explicit = import.meta.env.VITE_WS_BASE_URL;
@@ -92,8 +102,43 @@ function writeStorageJson(key, value) {
   }
 }
 
+function readStorageString(key, defaultValue = "") {
+  try {
+    const value = localStorage.getItem(key);
+    if (!value) {
+      return defaultValue;
+    }
+    return String(value);
+  } catch {
+    return defaultValue;
+  }
+}
+
+function writeStorageString(key, value) {
+  try {
+    if (!value) {
+      localStorage.removeItem(key);
+      return;
+    }
+    localStorage.setItem(key, String(value));
+  } catch {
+    // ignore
+  }
+}
+
+function normalizeRefCode(value) {
+  return (value || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 16);
+}
+
 function makeShareText({ actionLabel, name, juzNumber, khatmaNumber }) {
   return `بفضل الله ${name} ${actionLabel} الجزء ${juzNumber} في الختمة رقم ${khatmaNumber} على منصة الصدقة الجارية 🤍\nhttps://sadka-ten.vercel.app/`;
+}
+
+function makeInviteText({ name, inviteLink, completionsCount, invitedPeopleCount, totalCompletions }) {
+  return `انضم معي في ختمة رمضان وصدقة جارية 🌙
+${name} أكمل ${completionsCount} أجزاء ودعا ${invitedPeopleCount} مشاركين.
+إجمالي المنصة الآن ${totalCompletions} جزء مكتمل.
+${inviteLink}`;
 }
 
 async function shareContributionText(payload) {
@@ -107,6 +152,19 @@ async function shareContributionText(payload) {
     return;
   }
 
+  await navigator.clipboard.writeText(text);
+}
+
+async function shareInviteText(payload) {
+  const text = makeInviteText(payload);
+  if (navigator.share) {
+    await navigator.share({
+      title: "انضم إلى تحدي رمضان",
+      text,
+      url: payload.inviteLink
+    });
+    return;
+  }
   await navigator.clipboard.writeText(text);
 }
 
@@ -163,6 +221,106 @@ function downloadShareCard(payload) {
   link.click();
 }
 
+function downloadInviteImpactCard({ profile, impact }) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1080;
+  canvas.height = 1080;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return;
+  }
+
+  const gradient = context.createLinearGradient(0, 0, 1080, 1080);
+  gradient.addColorStop(0, "#062216");
+  gradient.addColorStop(1, "#12422f");
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  context.fillStyle = "#e8d08b";
+  context.font = "700 58px Tajawal, Arial";
+  context.textAlign = "right";
+  context.fillText("تقرير الأثر الرمضاني", 980, 130);
+
+  context.strokeStyle = "rgba(212,175,55,0.45)";
+  context.lineWidth = 3;
+  context.strokeRect(70, 190, 940, 760);
+
+  context.fillStyle = "#ffffff";
+  context.font = "700 46px Tajawal, Arial";
+  context.fillText(`${profile?.name || "مشارك"}`, 940, 300);
+
+  context.fillStyle = "#e8d08b";
+  context.font = "700 36px Tajawal, Arial";
+  context.fillText(`الأجزاء المكتملة: ${profile?.completions_count ?? 0}`, 940, 390);
+  context.fillText(`المدعوون عبر الرابط: ${profile?.invited_people_count ?? 0}`, 940, 460);
+  context.fillText(`إجمالي أثر الدعوة: ${profile?.invited_actions_count ?? 0}`, 940, 530);
+  context.fillText(`إجمالي أجزاء المنصة: ${impact?.total_completions ?? 0}`, 940, 600);
+  context.fillText(`نقاط الأثر العامة: ${impact?.impact_score ?? 0}`, 940, 670);
+
+  context.fillStyle = "#d9e6de";
+  context.font = "600 28px Tajawal, Arial";
+  context.fillText("رابط الدعوة:", 940, 760);
+  context.font = "600 24px Tajawal, Arial";
+  const linkText = String(profile?.invite_link || "https://sadka-ten.vercel.app/");
+  context.fillText(linkText.length > 52 ? `${linkText.slice(0, 52)}...` : linkText, 940, 810);
+
+  const url = canvas.toDataURL("image/png");
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "ramadan-impact-card.png";
+  link.click();
+}
+
+function downloadCertificateCard(profile) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1080;
+  canvas.height = 1080;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return;
+  }
+
+  const gradient = context.createLinearGradient(0, 0, 1080, 1080);
+  gradient.addColorStop(0, "#08291a");
+  gradient.addColorStop(1, "#164f36");
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  context.strokeStyle = "rgba(212,175,55,0.65)";
+  context.lineWidth = 7;
+  context.strokeRect(40, 40, 1000, 1000);
+
+  context.fillStyle = "#e8d08b";
+  context.textAlign = "center";
+  context.font = "700 62px Tajawal, Arial";
+  context.fillText("شهادة إنجاز رمضانية", 540, 190);
+
+  context.fillStyle = "#ffffff";
+  context.font = "700 46px Tajawal, Arial";
+  context.fillText(`تُمنح إلى: ${profile.name}`, 540, 320);
+
+  context.fillStyle = "#e8d08b";
+  context.font = "600 34px Tajawal, Arial";
+  context.fillText("تقديرًا لمساهمته في الصدقة الجارية خلال رمضان", 540, 420);
+
+  context.fillStyle = "#d9e6de";
+  context.font = "600 30px Tajawal, Arial";
+  context.fillText(`أجزاء مكتملة: ${profile.completions_count ?? 0}`, 540, 520);
+  context.fillText(`مدعوون: ${profile.invited_people_count ?? 0}`, 540, 570);
+  context.fillText(`أفضل سلسلة نشاط: ${profile.best_streak_days ?? 0} يوم`, 540, 620);
+
+  context.fillStyle = "#e8d08b";
+  context.font = "600 24px Tajawal, Arial";
+  context.fillText(`التاريخ: ${new Date().toLocaleDateString("ar-EG")}`, 540, 760);
+  context.fillText("منصة الصدقة الجارية - رمضان", 540, 810);
+
+  const url = canvas.toDataURL("image/png");
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `ramadan-certificate-${profile.name}.png`;
+  link.click();
+}
+
 export default function App() {
   const [khatma, setKhatma] = useState(null);
   const [stats, setStats] = useState({});
@@ -170,16 +328,22 @@ export default function App() {
   const [activityEvents, setActivityEvents] = useState([]);
   const [duaMessages, setDuaMessages] = useState([]);
   const [khatmaHistory, setKhatmaHistory] = useState([]);
+  const [inviteLeaderboard, setInviteLeaderboard] = useState([]);
+  const [teamLeaderboard, setTeamLeaderboard] = useState([]);
+  const [ramadanImpact, setRamadanImpact] = useState(null);
   const [dailyWird, setDailyWird] = useState(null);
   const [profileStats, setProfileStats] = useState(null);
   const [reminders, setReminders] = useState(null);
   const [name, setName] = useState("");
+  const [refCode, setRefCode] = useState(() => normalizeRefCode(readStorageString(REF_CODE_STORAGE_KEY, "")));
   const [lastReserved, setLastReserved] = useState(null);
   const [lastCompleted, setLastCompleted] = useState(null);
   const [loading, setLoading] = useState(true);
   const [reserveLoadingJuz, setReserveLoadingJuz] = useState(null);
   const [completeLoadingJuz, setCompleteLoadingJuz] = useState(null);
   const [duaLoading, setDuaLoading] = useState(false);
+  const [teamActionLoading, setTeamActionLoading] = useState(false);
+  const [reminderCheckLoading, setReminderCheckLoading] = useState(false);
   const [activeTasbeehPhrase, setActiveTasbeehPhrase] = useState("");
   const [selectedJuzForReading, setSelectedJuzForReading] = useState(null);
   const [liveConnected, setLiveConnected] = useState(false);
@@ -188,6 +352,27 @@ export default function App() {
   const [notificationEnabled, setNotificationEnabled] = useState(() =>
     readStorageBool(NOTIFICATIONS_STORAGE_KEY, false)
   );
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = normalizeRefCode(params.get("ref") || "");
+    if (!fromUrl) {
+      return;
+    }
+
+    setRefCode(fromUrl);
+    writeStorageString(REF_CODE_STORAGE_KEY, fromUrl);
+    setSuccessMessage("تم تفعيل رابط إحالة مشارك. شارك واصلح الخير معًا.");
+
+    params.delete("ref");
+    const query = params.toString();
+    const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash || ""}`;
+    window.history.replaceState({}, "", nextUrl);
+  }, []);
 
   const loadProfileData = useCallback(async (participantName) => {
     const safeName = participantName.trim();
@@ -199,7 +384,7 @@ export default function App() {
 
     try {
       const [profileRes, remindersRes] = await Promise.all([
-        getProfileStats(safeName),
+        getProfileStats(safeName, refCode),
         getReminders(safeName)
       ]);
       setProfileStats(profileRes);
@@ -207,7 +392,7 @@ export default function App() {
     } catch (error) {
       setErrorMessage(parseApiError(error));
     }
-  }, []);
+  }, [refCode]);
 
   const loadData = useCallback(async (silent = false) => {
     if (!silent) {
@@ -215,14 +400,28 @@ export default function App() {
     }
 
     try {
-      const [khatmaRes, statsRes, tasbeehRes, activityRes, duaRes, historyRes, wirdRes] = await Promise.all([
+      const [
+        khatmaRes,
+        statsRes,
+        tasbeehRes,
+        activityRes,
+        duaRes,
+        historyRes,
+        wirdRes,
+        inviteLeaderboardRes,
+        teamsRes,
+        impactRes
+      ] = await Promise.all([
         getCurrentKhatma(),
         getStats(),
         getTasbeeh(),
         getActivityFeed(35),
         getDuaWall(),
         getKhatmaHistory(24),
-        getDailyWird()
+        getDailyWird(),
+        getInviteLeaderboard(15),
+        getTeams(15),
+        getRamadanImpact(10, 8)
       ]);
 
       setKhatma(khatmaRes.khatma);
@@ -232,6 +431,9 @@ export default function App() {
       setDuaMessages(duaRes);
       setKhatmaHistory(historyRes);
       setDailyWird(wirdRes);
+      setInviteLeaderboard(inviteLeaderboardRes);
+      setTeamLeaderboard(teamsRes);
+      setRamadanImpact(impactRes);
       setErrorMessage("");
     } catch (error) {
       setErrorMessage(parseApiError(error));
@@ -243,10 +445,14 @@ export default function App() {
   }, []);
 
   const checkRemindersAndNotify = useCallback(
-    async (participantName) => {
+    async (participantName, options = {}) => {
+      const { silent = true } = options;
       const safeName = (participantName || name).trim();
       if (!safeName) {
-        return;
+        if (!silent) {
+          throw new Error("NAME_REQUIRED");
+        }
+        return null;
       }
 
       try {
@@ -254,7 +460,7 @@ export default function App() {
         setReminders(result);
 
         if (!notificationEnabled || typeof Notification === "undefined" || Notification.permission !== "granted") {
-          return;
+          return result;
         }
 
         const notifiedMap = readStorageJson(NOTIFIED_REMINDERS_KEY, {});
@@ -280,8 +486,12 @@ export default function App() {
         if (hasUpdates) {
           writeStorageJson(NOTIFIED_REMINDERS_KEY, notifiedMap);
         }
-      } catch {
-        // نترك التذكيرات صامتة عند الفشل.
+        return result;
+      } catch (error) {
+        if (!silent) {
+          throw error;
+        }
+        return null;
       }
     },
     [name, notificationEnabled]
@@ -362,12 +572,16 @@ export default function App() {
   }, [notificationEnabled]);
 
   useEffect(() => {
+    writeStorageString(REF_CODE_STORAGE_KEY, refCode);
+  }, [refCode]);
+
+  useEffect(() => {
     if (!notificationEnabled || !name.trim()) {
       return undefined;
     }
 
-    checkRemindersAndNotify(name);
-    const interval = setInterval(() => checkRemindersAndNotify(name), REMINDER_INTERVAL_MS);
+    checkRemindersAndNotify(name, { silent: true });
+    const interval = setInterval(() => checkRemindersAndNotify(name, { silent: true }), REMINDER_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [checkRemindersAndNotify, notificationEnabled, name]);
 
@@ -383,7 +597,7 @@ export default function App() {
     setErrorMessage("");
 
     try {
-      const response = await reserveJuz({ juz_number: juzNumber, name: trimmedName });
+      const response = await reserveJuz({ juz_number: juzNumber, name: trimmedName, ref_code: refCode });
       setLastReserved({
         ...response.reserved_juz,
         khatma_number: response.khatma_number
@@ -393,7 +607,7 @@ export default function App() {
       setSuccessMessage(`تم تأكيد حجز الجزء ${response.reserved_juz.juz_number} باسم ${trimmedName}.`);
       await loadData(true);
       await loadProfileData(trimmedName);
-      await checkRemindersAndNotify(trimmedName);
+      await checkRemindersAndNotify(trimmedName, { silent: true });
     } catch (error) {
       setSuccessMessage("");
       setErrorMessage(parseApiError(error));
@@ -413,7 +627,7 @@ export default function App() {
     setCompleteLoadingJuz(juzNumber);
     setErrorMessage("");
     try {
-      const response = await completeJuz({ juz_number: juzNumber, name: trimmedName });
+      const response = await completeJuz({ juz_number: juzNumber, name: trimmedName, ref_code: refCode });
       setLastCompleted({
         ...response.completed_juz,
         khatma_number: response.khatma_number
@@ -443,7 +657,7 @@ export default function App() {
     setActiveTasbeehPhrase(phrase);
 
     try {
-      const updatedCounter = await incrementTasbeeh({ phrase, name: name.trim() });
+      const updatedCounter = await incrementTasbeeh({ phrase, name: name.trim(), ref_code: refCode });
       setTasbeehCounters((prev) =>
         prev.map((counter) => (counter.id === updatedCounter.id ? updatedCounter : counter))
       );
@@ -461,7 +675,7 @@ export default function App() {
   const handleCreateDua = async (payload) => {
     setDuaLoading(true);
     try {
-      const created = await createDua(payload);
+      const created = await createDua({ ...payload, ref_code: refCode });
       setDuaMessages((prev) => [created, ...prev]);
       setSuccessMessage("تمت إضافة الدعاء بنجاح.");
       return true;
@@ -476,23 +690,100 @@ export default function App() {
   const handleToggleNotifications = async () => {
     if (notificationEnabled) {
       setNotificationEnabled(false);
+      setSuccessMessage("تم إيقاف تذكيرات القراءة.");
+      return;
+    }
+
+    const safeName = name.trim();
+    if (!safeName) {
+      setSuccessMessage("");
+      setErrorMessage("اكتب اسم المشارك أولًا لتفعيل التذكيرات.");
       return;
     }
 
     if (typeof Notification === "undefined") {
+      setSuccessMessage("");
       setErrorMessage("متصفحك لا يدعم الإشعارات.");
+      return;
+    }
+
+    if (typeof window !== "undefined" && !window.isSecureContext) {
+      setSuccessMessage("");
+      setErrorMessage("الإشعارات تتطلب اتصالًا آمنًا (HTTPS) أو تشغيلًا محليًا.");
       return;
     }
 
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
+      setSuccessMessage("");
       setErrorMessage("يرجى السماح بالإشعارات لتفعيل التذكير.");
       return;
     }
 
     setNotificationEnabled(true);
     setSuccessMessage("تم تفعيل تذكيرات القراءة.");
-    await checkRemindersAndNotify(name);
+    try {
+      await checkRemindersAndNotify(safeName, { silent: false });
+    } catch (error) {
+      setSuccessMessage("");
+      setErrorMessage(parseApiError(error));
+    }
+  };
+
+  const handleReminderCheck = async () => {
+    const safeName = name.trim();
+    if (!safeName) {
+      setSuccessMessage("");
+      setErrorMessage("اكتب اسم المشارك أولًا ثم افحص التذكيرات.");
+      return;
+    }
+
+    setReminderCheckLoading(true);
+    setErrorMessage("");
+    try {
+      const result = await checkRemindersAndNotify(safeName, { silent: false });
+      if (!result) {
+        return;
+      }
+      setSuccessMessage(
+        `تم فحص التذكيرات: ${result.pending_count} جزء قيد القراءة، ${result.due_soon_count} قريب انتهاءه خلال ساعة.`
+      );
+    } catch (error) {
+      setSuccessMessage("");
+      setErrorMessage(parseApiError(error));
+    } finally {
+      setReminderCheckLoading(false);
+    }
+  };
+
+  const handleTestNotification = async () => {
+    if (typeof Notification === "undefined") {
+      setSuccessMessage("");
+      setErrorMessage("متصفحك لا يدعم الإشعارات.");
+      return;
+    }
+
+    if (typeof window !== "undefined" && !window.isSecureContext) {
+      setSuccessMessage("");
+      setErrorMessage("الإشعارات تتطلب اتصالًا آمنًا (HTTPS) أو تشغيلًا محليًا.");
+      return;
+    }
+
+    let permission = Notification.permission;
+    if (permission !== "granted") {
+      permission = await Notification.requestPermission();
+    }
+    if (permission !== "granted") {
+      setSuccessMessage("");
+      setErrorMessage("يرجى السماح بالإشعارات أولًا.");
+      return;
+    }
+
+    new Notification("تذكير تجريبي", {
+      body: "إذا ظهر هذا الإشعار، فميزة التذكيرات تعمل بشكل صحيح.",
+      icon: "/icons/icon-192.svg"
+    });
+    setSuccessMessage("تم إرسال إشعار تجريبي.");
   };
 
   const handleShareLastAction = async (actionType) => {
@@ -529,6 +820,107 @@ export default function App() {
     setSuccessMessage("تم تحميل بطاقة المشاركة.");
   };
 
+  const handleCopyInviteLink = async () => {
+    const link = profileStats?.invite_link;
+    if (!link) {
+      setSuccessMessage("");
+      setErrorMessage("رابط الدعوة غير متاح بعد.");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(link);
+      setSuccessMessage("تم نسخ رابط الدعوة.");
+    } catch {
+      setSuccessMessage("");
+      setErrorMessage("تعذر نسخ الرابط على هذا المتصفح.");
+    }
+  };
+
+  const handleNativeInviteShare = async () => {
+    if (!profileStats?.invite_link) {
+      setSuccessMessage("");
+      setErrorMessage("اكتب اسمك أولًا للحصول على رابط الدعوة.");
+      return;
+    }
+
+    try {
+      await shareInviteText({
+        name: profileStats.name || name.trim(),
+        inviteLink: profileStats.invite_link,
+        completionsCount: profileStats.completions_count ?? 0,
+        invitedPeopleCount: profileStats.invited_people_count ?? 0,
+        totalCompletions: ramadanImpact?.total_completions ?? stats.completed_count ?? 0
+      });
+      setSuccessMessage("تم تجهيز رسالة الدعوة.");
+    } catch {
+      setSuccessMessage("");
+      setErrorMessage("تعذر تجهيز رسالة الدعوة.");
+    }
+  };
+
+  const handleDownloadImpactCard = () => {
+    if (!profileStats) {
+      return;
+    }
+    downloadInviteImpactCard({ profile: profileStats, impact: ramadanImpact });
+    setSuccessMessage("تم تحميل بطاقة الأثر.");
+  };
+
+  const handleDownloadCertificate = () => {
+    if (!profileStats?.certificate?.eligible) {
+      setSuccessMessage("");
+      setErrorMessage("لم تحقق شروط الشهادة بعد.");
+      return;
+    }
+    downloadCertificateCard(profileStats);
+    setSuccessMessage("تم تحميل الشهادة الرمضانية.");
+  };
+
+  const handleClearRefCode = () => {
+    setRefCode("");
+    writeStorageString(REF_CODE_STORAGE_KEY, "");
+    setSuccessMessage("تم إلغاء رمز الإحالة لهذا الجهاز.");
+  };
+
+  const handleCreateTeam = async (payload) => {
+    setTeamActionLoading(true);
+    try {
+      await createTeam({ ...payload, ref_code: refCode });
+      setSuccessMessage("تم إنشاء الفريق بنجاح.");
+      await loadData(true);
+      if (name.trim()) {
+        await loadProfileData(name);
+      }
+      return true;
+    } catch (error) {
+      setSuccessMessage("");
+      setErrorMessage(parseApiError(error));
+      return false;
+    } finally {
+      setTeamActionLoading(false);
+    }
+  };
+
+  const handleJoinTeam = async (payload) => {
+    setTeamActionLoading(true);
+    try {
+      await joinTeam({ ...payload, ref_code: refCode });
+      setSuccessMessage("تم الانضمام إلى الفريق.");
+      await loadData(true);
+      if (name.trim()) {
+        await loadProfileData(name);
+      }
+      return true;
+    } catch (error) {
+      setSuccessMessage("");
+      setErrorMessage(parseApiError(error));
+      return false;
+    } finally {
+      setTeamActionLoading(false);
+    }
+  };
+
   const sortedAjzaa = useMemo(() => {
     return [...(khatma?.ajzaa || [])].sort((a, b) => a.juz_number - b.juz_number);
   }, [khatma]);
@@ -559,6 +951,7 @@ export default function App() {
 
         <DailyWirdSection wird={dailyWird} onApplyTasbeehPhrase={handleTasbeehIncrement} />
         <StatsSection stats={stats} />
+        <RamadanImpactSection impact={ramadanImpact} />
 
         <section className="rounded-2xl border border-goldLight/25 bg-emeraldDeep/80 p-3 shadow-luxury sm:p-5">
           <label htmlFor="name" className="mb-2 block text-sm text-goldSoft">
@@ -572,14 +965,38 @@ export default function App() {
             placeholder="اكتب اسمك لحجز الجزء وحفظ إنجازك"
             className="w-full rounded-xl border border-goldLight/30 bg-emeraldNight/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-400 focus:border-goldLight focus:outline-none sm:px-4 sm:py-3 sm:text-base"
           />
+          {refCode ? (
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+              <span className="rounded-full border border-emeraldSoft/60 bg-emeraldSoft/20 px-2 py-1 text-emerald-100">
+                تم التفعيل عبر كود إحالة: {refCode}
+              </span>
+              <button
+                type="button"
+                onClick={handleClearRefCode}
+                className="rounded-full border border-goldLight/35 bg-goldLight/10 px-2 py-1 font-bold text-goldSoft"
+              >
+                إلغاء الكود
+              </button>
+            </div>
+          ) : null}
         </section>
 
-        <ProfileStatsSection profile={profileStats} />
+        <ProfileStatsSection profile={profileStats} onDownloadCertificate={handleDownloadCertificate} />
+        <InviteHubSection
+          profile={profileStats}
+          impact={ramadanImpact}
+          onCopyInviteLink={handleCopyInviteLink}
+          onNativeShare={handleNativeInviteShare}
+          onDownloadImpactCard={handleDownloadImpactCard}
+        />
         <ReminderSection
           enabled={notificationEnabled}
           onToggle={handleToggleNotifications}
+          participantName={name}
           reminders={reminders}
-          onRequestCheck={() => checkRemindersAndNotify(name)}
+          loading={reminderCheckLoading}
+          onRequestCheck={handleReminderCheck}
+          onSendTestNotification={handleTestNotification}
         />
 
         {lastReserved ? (
@@ -657,6 +1074,18 @@ export default function App() {
           </section>
         ) : (
           <>
+            <div className="grid gap-4 xl:grid-cols-2">
+              <InviteLeaderboardSection leaders={inviteLeaderboard} />
+              <TeamChallengeSection
+                participantName={name}
+                profile={profileStats}
+                teams={teamLeaderboard}
+                loading={teamActionLoading}
+                onCreate={handleCreateTeam}
+                onJoin={handleJoinTeam}
+              />
+            </div>
+
             <div className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
               <KhatmaGrid
                 ajzaa={sortedAjzaa}

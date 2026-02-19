@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import secrets
 from datetime import timedelta
 from typing import TypedDict
 from urllib.error import HTTPError, URLError
@@ -9,10 +10,20 @@ from urllib.request import Request, urlopen
 
 from django.core.cache import cache
 from django.db import IntegrityError, transaction
-from django.db.models import F
+from django.db.models import Count, F, Q, Sum
 from django.utils import timezone
 
-from .models import ActivityEvent, DuaMessage, Juz, Khatma, ParticipantProgress, TasbeehCounter
+from .models import (
+    ActivityEvent,
+    DuaMessage,
+    Juz,
+    Khatma,
+    ParticipantProgress,
+    ReferralAction,
+    TasbeehCounter,
+    TeamGroup,
+    TeamMembership,
+)
 
 DEFAULT_TASBEEH_PHRASES = [
     "سُبْحَانَ اللَّهِ",
@@ -56,6 +67,10 @@ DAILY_WIRD_ENTRIES = [
     },
 ]
 
+CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+REFERRAL_CODE_LENGTH = 8
+TEAM_CODE_LENGTH = 6
+
 
 class ReserveResult(TypedDict):
     reserved_juz: Juz
@@ -73,6 +88,25 @@ class CompleteResult(TypedDict):
 
 def normalize_name(name: str) -> str:
     return name.strip()
+
+
+def normalize_referral_code(value: str) -> str:
+    return "".join(ch for ch in value.strip().upper() if ch.isalnum())[:16]
+
+
+def normalize_team_code(value: str) -> str:
+    return "".join(ch for ch in value.strip().upper() if ch.isalnum())[:12]
+
+
+def public_site_url() -> str:
+    return (os.getenv("PUBLIC_SITE_URL") or "https://sadka-ten.vercel.app").rstrip("/")
+
+
+def build_invite_link(referral_code: str) -> str:
+    code = normalize_referral_code(referral_code)
+    if not code:
+        return public_site_url()
+    return f"{public_site_url()}/?ref={code}"
 
 
 def reservation_expiry_hours() -> int:
@@ -100,24 +134,140 @@ def create_activity_event(
     )
 
 
-def get_or_create_participant(name: str) -> ParticipantProgress:
-    safe_name = normalize_name(name)
-    if not safe_name:
-        raise ValueError("الاسم مطلوب.")
-    participant = ParticipantProgress.objects.filter(name__iexact=safe_name).first()
-    if participant:
+def _generate_unique_code(model, field_name: str, length: int) -> str:
+    for _ in range(30):
+        code = "".join(secrets.choice(CODE_ALPHABET) for _ in range(length))
+        if not model.objects.filter(**{field_name: code}).exists():
+            return code
+    raise RuntimeError("تعذر إنشاء رمز فريد حاليًا. حاول مرة أخرى.")
+
+
+def _resolve_referrer(ref_code: str) -> ParticipantProgress | None:
+    code = normalize_referral_code(ref_code)
+    if not code:
+        return None
+    return ParticipantProgress.objects.filter(referral_code__iexact=code).first()
+
+
+def ensure_participant_referral_code(participant: ParticipantProgress) -> str:
+    if participant.referral_code:
+        return participant.referral_code
+
+    participant.referral_code = _generate_unique_code(ParticipantProgress, "referral_code", REFERRAL_CODE_LENGTH)
+    participant.save(update_fields=["referral_code", "updated_at"])
+    return participant.referral_code
+
+
+def attach_referrer_if_possible(participant: ParticipantProgress, ref_code: str) -> None:
+    if participant.referred_by_id:
+        return
+
+    referrer = _resolve_referrer(ref_code)
+    if not referrer or referrer.pk == participant.pk:
+        return
+
+    participant.referred_by = referrer
+    participant.save(update_fields=["referred_by", "updated_at"])
+    create_activity_event(
+        ActivityEvent.INVITE,
+        f"{participant.name} انضم عبر رابط مشاركة {referrer.name}.",
+        actor_name=participant.name,
+    )
+
+
+def mark_participant_activity(participant: ParticipantProgress) -> ParticipantProgress:
+    today = timezone.localdate()
+    if participant.last_activity_date == today:
         return participant
-    return ParticipantProgress.objects.create(name=safe_name)
 
+    if participant.last_activity_date == today - timedelta(days=1):
+        participant.streak_days += 1
+    else:
+        participant.streak_days = 1
 
-def bump_participant_counter(name: str, field_name: str) -> ParticipantProgress:
-    participant = get_or_create_participant(name)
-    ParticipantProgress.objects.filter(pk=participant.pk).update(**{field_name: F(field_name) + 1})
-    participant.refresh_from_db()
+    participant.last_activity_date = today
+    participant.best_streak_days = max(participant.best_streak_days, participant.streak_days)
+    participant.save(update_fields=["last_activity_date", "streak_days", "best_streak_days", "updated_at"])
     return participant
 
 
-def build_badges(*, reservations_count: int, completions_count: int, tasbeeh_count: int) -> list[dict]:
+def participant_points(participant: ParticipantProgress) -> int:
+    return int(
+        participant.reservations_count
+        + (participant.completions_count * 4)
+        + (participant.tasbeeh_count // 10)
+        + (participant.dua_count * 2)
+        + participant.streak_days
+    )
+
+
+def get_or_create_participant(name: str, *, ref_code: str = "") -> ParticipantProgress:
+    safe_name = normalize_name(name)
+    if not safe_name:
+        raise ValueError("الاسم مطلوب.")
+
+    participant = ParticipantProgress.objects.filter(name__iexact=safe_name).first()
+    if participant:
+        ensure_participant_referral_code(participant)
+        attach_referrer_if_possible(participant, ref_code)
+        return participant
+
+    referrer = _resolve_referrer(ref_code)
+    participant = ParticipantProgress.objects.create(
+        name=safe_name,
+        referral_code=_generate_unique_code(ParticipantProgress, "referral_code", REFERRAL_CODE_LENGTH),
+        referred_by=referrer,
+    )
+    if referrer:
+        create_activity_event(
+            ActivityEvent.INVITE,
+            f"{participant.name} انضم عبر رابط مشاركة {referrer.name}.",
+            actor_name=participant.name,
+        )
+    return participant
+
+
+def bump_participant_counter(name: str, field_name: str, *, ref_code: str = "") -> ParticipantProgress:
+    participant = get_or_create_participant(name, ref_code=ref_code)
+    ParticipantProgress.objects.filter(pk=participant.pk).update(**{field_name: F(field_name) + 1})
+    participant.refresh_from_db()
+    return mark_participant_activity(participant)
+
+
+def record_referral_action(participant: ParticipantProgress, action_type: str) -> None:
+    if not participant.referred_by_id:
+        return
+
+    ReferralAction.objects.create(
+        inviter_id=participant.referred_by_id,
+        invited=participant,
+        action_type=action_type,
+    )
+
+
+def get_participant_invite_stats(participant: ParticipantProgress) -> dict:
+    invited_people_count = participant.invited_participants.count()
+    invited_actions_count = participant.referral_actions.count()
+    invited_active_people_count = participant.referral_actions.values("invited_id").distinct().count()
+    invited_completions_count = participant.referral_actions.filter(action_type=ReferralAction.COMPLETE).count()
+
+    return {
+        "invited_people_count": invited_people_count,
+        "invited_active_people_count": invited_active_people_count,
+        "invited_actions_count": invited_actions_count,
+        "invited_completions_count": invited_completions_count,
+    }
+
+
+def build_badges(
+    *,
+    reservations_count: int,
+    completions_count: int,
+    tasbeeh_count: int,
+    dua_count: int,
+    invite_count: int,
+    streak_days: int,
+) -> list[dict]:
     badges: list[dict] = []
 
     if reservations_count >= 1 or tasbeeh_count >= 1:
@@ -144,6 +294,14 @@ def build_badges(*, reservations_count: int, completions_count: int, tasbeeh_cou
                 "description": "أكملت 5 أجزاء أو أكثر.",
             }
         )
+    if completions_count >= 10:
+        badges.append(
+            {
+                "key": "ten_completions",
+                "title": "قائد الختمات",
+                "description": "أكملت 10 أجزاء أو أكثر.",
+            }
+        )
     if reservations_count >= 10:
         badges.append(
             {
@@ -168,8 +326,68 @@ def build_badges(*, reservations_count: int, completions_count: int, tasbeeh_cou
                 "description": "سجلت 500 تسبيحة أو أكثر.",
             }
         )
+    if dua_count >= 3:
+        badges.append(
+            {
+                "key": "dua_helper",
+                "title": "صاحب دعاء",
+                "description": "أضفت 3 أدعية أو أكثر في حائط الدعاء.",
+            }
+        )
+    if invite_count >= 5:
+        badges.append(
+            {
+                "key": "invite_5",
+                "title": "سفير رمضان",
+                "description": "دَعوت 5 مشاركين أو أكثر عبر رابطك.",
+            }
+        )
+    if invite_count >= 15:
+        badges.append(
+            {
+                "key": "invite_15",
+                "title": "قائد الدعوة",
+                "description": "دَعوت 15 مشاركًا أو أكثر.",
+            }
+        )
+    if streak_days >= 3:
+        badges.append(
+            {
+                "key": "streak_3",
+                "title": "مواظب 3 أيام",
+                "description": "نشاط متواصل لمدة 3 أيام.",
+            }
+        )
+    if streak_days >= 7:
+        badges.append(
+            {
+                "key": "streak_7",
+                "title": "مواظب أسبوع",
+                "description": "نشاط متواصل لمدة 7 أيام.",
+            }
+        )
 
     return badges
+
+
+def build_certificate_payload(participant: ParticipantProgress, invite_count: int) -> dict:
+    milestones: list[str] = []
+
+    if participant.completions_count >= 10:
+        milestones.append("أكملت 10 أجزاء أو أكثر")
+    if invite_count >= 5:
+        milestones.append("دعوت 5 مشاركين أو أكثر")
+    if participant.best_streak_days >= 7:
+        milestones.append("حافظت على سلسلة نشاط أسبوعية")
+    if participant.tasbeeh_count >= 300:
+        milestones.append("سجلت 300 تسبيحة أو أكثر")
+
+    return {
+        "eligible": bool(milestones),
+        "title": "شهادة إنجاز رمضانية",
+        "issued_on": str(timezone.localdate()),
+        "milestones": milestones,
+    }
 
 
 def create_khatma_with_juz(number: int) -> Khatma:
@@ -237,7 +455,7 @@ def finalize_khatma_if_completed(current: Khatma, *, now=None) -> tuple[bool, in
 
 
 @transaction.atomic
-def reserve_juz(juz_number: int, name: str) -> ReserveResult:
+def reserve_juz(juz_number: int, name: str, *, ref_code: str = "") -> ReserveResult:
     safe_name = normalize_name(name)
     if not safe_name:
         raise ValueError("الاسم مطلوب.")
@@ -268,7 +486,9 @@ def reserve_juz(juz_number: int, name: str) -> ReserveResult:
     juz.reservation_expires_at = now + timedelta(hours=reservation_expiry_hours())
     juz.save(update_fields=["reserved_by", "reserved_at", "reservation_expires_at"])
 
-    bump_participant_counter(safe_name, "reservations_count")
+    participant = bump_participant_counter(safe_name, "reservations_count", ref_code=ref_code)
+    record_referral_action(participant, ReferralAction.RESERVE)
+
     create_activity_event(
         ActivityEvent.RESERVE,
         f"{safe_name} حجز الجزء {juz.juz_number}.",
@@ -286,7 +506,7 @@ def reserve_juz(juz_number: int, name: str) -> ReserveResult:
 
 
 @transaction.atomic
-def complete_juz(juz_number: int, name: str) -> CompleteResult:
+def complete_juz(juz_number: int, name: str, *, ref_code: str = "") -> CompleteResult:
     safe_name = normalize_name(name)
     if not safe_name:
         raise ValueError("الاسم مطلوب.")
@@ -311,7 +531,9 @@ def complete_juz(juz_number: int, name: str) -> CompleteResult:
     juz.completed_at = now
     juz.save(update_fields=["completed_by", "completed_at"])
 
-    bump_participant_counter(safe_name, "completions_count")
+    participant = bump_participant_counter(safe_name, "completions_count", ref_code=ref_code)
+    record_referral_action(participant, ReferralAction.COMPLETE)
+
     create_activity_event(
         ActivityEvent.COMPLETE,
         f"{safe_name} أتم قراءة الجزء {juz.juz_number}.",
@@ -343,7 +565,7 @@ def ensure_default_tasbeeh_phrases() -> None:
         TasbeehCounter.objects.bulk_create(missing)
 
 
-def increment_tasbeeh_phrase(*, phrase: str, name: str = "") -> TasbeehCounter:
+def increment_tasbeeh_phrase(*, phrase: str, name: str = "", ref_code: str = "") -> TasbeehCounter:
     phrase = phrase.strip()
     if not phrase:
         raise ValueError("الذكر مطلوب.")
@@ -355,7 +577,8 @@ def increment_tasbeeh_phrase(*, phrase: str, name: str = "") -> TasbeehCounter:
 
     actor_name = normalize_name(name)
     if actor_name:
-        bump_participant_counter(actor_name, "tasbeeh_count")
+        participant = bump_participant_counter(actor_name, "tasbeeh_count", ref_code=ref_code)
+        record_referral_action(participant, ReferralAction.TASBEEH)
         message = f"{actor_name} شارك في الذكر: {phrase}."
     else:
         message = f"تمت زيادة الذكر: {phrase}."
@@ -368,13 +591,16 @@ def increment_tasbeeh_phrase(*, phrase: str, name: str = "") -> TasbeehCounter:
     return counter
 
 
-def add_dua_message(*, name: str, content: str) -> DuaMessage:
+def add_dua_message(*, name: str, content: str, ref_code: str = "") -> DuaMessage:
     safe_name = normalize_name(name)
     safe_content = content.strip()
     if not safe_name:
         raise ValueError("الاسم مطلوب.")
     if not safe_content:
         raise ValueError("نص الدعاء مطلوب.")
+
+    participant = bump_participant_counter(safe_name, "dua_count", ref_code=ref_code)
+    record_referral_action(participant, ReferralAction.DUA)
 
     dua = DuaMessage.objects.create(name=safe_name, content=safe_content)
     create_activity_event(
@@ -385,18 +611,178 @@ def add_dua_message(*, name: str, content: str) -> DuaMessage:
     return dua
 
 
-def get_profile_stats(name: str) -> dict:
+def build_team_payload(team: TeamGroup, *, include_members: bool = False) -> dict:
+    memberships = list(team.memberships.select_related("participant").all())
+    members = [membership.participant for membership in memberships]
+    points = sum(participant_points(member) for member in members)
+    members_count = len(members)
+    target_points = max(team.target_points, 1)
+
+    data = {
+        "id": team.id,
+        "name": team.name,
+        "code": team.code,
+        "target_points": team.target_points,
+        "points": points,
+        "members_count": members_count,
+        "remaining_points": max(0, team.target_points - points),
+        "progress_percent": min(100, int((points * 100) / target_points)),
+        "created_at": team.created_at,
+    }
+
+    if include_members:
+        data["members"] = [
+            {
+                "name": member.name,
+                "points": participant_points(member),
+                "completions_count": member.completions_count,
+                "streak_days": member.streak_days,
+            }
+            for member in members
+        ]
+
+    return data
+
+
+@transaction.atomic
+def create_team(*, owner_name: str, team_name: str, target_points: int = 300, ref_code: str = "") -> dict:
+    safe_owner_name = normalize_name(owner_name)
+    safe_team_name = team_name.strip()
+    if not safe_owner_name:
+        raise ValueError("اسم القائد مطلوب.")
+    if len(safe_team_name) < 3:
+        raise ValueError("اسم الفريق قصير جدًا.")
+
+    try:
+        safe_target = int(target_points)
+    except (TypeError, ValueError):
+        safe_target = 300
+    safe_target = max(50, min(safe_target, 5000))
+
+    owner = get_or_create_participant(safe_owner_name, ref_code=ref_code)
+    existing_membership = TeamMembership.objects.select_related("team").filter(participant=owner).first()
+    if existing_membership:
+        raise ValueError(f"أنت منضم بالفعل إلى فريق: {existing_membership.team.name}.")
+
+    team = TeamGroup.objects.create(
+        name=safe_team_name,
+        code=_generate_unique_code(TeamGroup, "code", TEAM_CODE_LENGTH),
+        created_by=owner,
+        target_points=safe_target,
+    )
+    TeamMembership.objects.create(team=team, participant=owner)
+
+    create_activity_event(
+        ActivityEvent.TEAM,
+        f"{owner.name} أنشأ فريق {team.name} برمز {team.code}.",
+        actor_name=owner.name,
+    )
+    return build_team_payload(team, include_members=True)
+
+
+@transaction.atomic
+def join_team(*, name: str, team_code: str, ref_code: str = "") -> dict:
     safe_name = normalize_name(name)
     if not safe_name:
         raise ValueError("الاسم مطلوب.")
 
-    participant = ParticipantProgress.objects.filter(name__iexact=safe_name).first()
-    reservations_count = participant.reservations_count if participant else 0
-    completions_count = participant.completions_count if participant else 0
-    tasbeeh_count = participant.tasbeeh_count if participant else 0
-    updated_at = participant.updated_at if participant else None
+    safe_code = normalize_team_code(team_code)
+    if not safe_code:
+        raise ValueError("رمز الفريق مطلوب.")
 
+    team = TeamGroup.objects.filter(code__iexact=safe_code).first()
+    if not team:
+        raise ValueError("رمز الفريق غير صحيح.")
+
+    participant = get_or_create_participant(safe_name, ref_code=ref_code)
+    existing_membership = TeamMembership.objects.select_related("team").filter(participant=participant).first()
+    if existing_membership and existing_membership.team_id == team.id:
+        raise ValueError("أنت بالفعل عضو في هذا الفريق.")
+    if existing_membership and existing_membership.team_id != team.id:
+        raise ValueError(f"أنت منضم لفريق آخر: {existing_membership.team.name}.")
+
+    TeamMembership.objects.create(team=team, participant=participant)
+    create_activity_event(
+        ActivityEvent.TEAM,
+        f"{participant.name} انضم إلى فريق {team.name}.",
+        actor_name=participant.name,
+    )
+    return build_team_payload(team, include_members=True)
+
+
+def get_teams_leaderboard(limit: int = 20) -> list[dict]:
+    safe_limit = max(1, min(int(limit), 100))
+    teams = TeamGroup.objects.prefetch_related("memberships__participant").all()
+
+    entries = [build_team_payload(team, include_members=False) for team in teams]
+    entries.sort(
+        key=lambda item: (
+            item["points"],
+            item["members_count"],
+            -item["remaining_points"],
+        ),
+        reverse=True,
+    )
+
+    for index, item in enumerate(entries, start=1):
+        item["rank"] = index
+
+    return entries[:safe_limit]
+
+
+def get_invite_leaderboard(limit: int = 20) -> list[dict]:
+    safe_limit = max(1, min(int(limit), 100))
+    participants = ParticipantProgress.objects.annotate(
+        invited_people_count=Count("invited_participants", distinct=True),
+        invited_actions_count=Count("referral_actions"),
+        invited_completions_count=Count(
+            "referral_actions",
+            filter=Q(referral_actions__action_type=ReferralAction.COMPLETE),
+        ),
+    ).filter(Q(invited_people_count__gt=0) | Q(invited_actions_count__gt=0))
+
+    entries = []
+    for participant in participants:
+        score = (
+            participant.invited_people_count * 20
+            + participant.invited_completions_count * 6
+            + participant.invited_actions_count
+        )
+        entries.append(
+            {
+                "name": participant.name,
+                "referral_code": participant.referral_code,
+                "invite_link": build_invite_link(participant.referral_code),
+                "invited_people_count": participant.invited_people_count,
+                "invited_actions_count": participant.invited_actions_count,
+                "invited_completions_count": participant.invited_completions_count,
+                "score": score,
+            }
+        )
+
+    entries.sort(
+        key=lambda item: (
+            item["score"],
+            item["invited_people_count"],
+            item["invited_actions_count"],
+        ),
+        reverse=True,
+    )
+
+    for index, item in enumerate(entries, start=1):
+        item["rank"] = index
+
+    return entries[:safe_limit]
+
+
+def get_profile_stats(name: str, *, ref_code: str = "") -> dict:
+    safe_name = normalize_name(name)
+    if not safe_name:
+        raise ValueError("الاسم مطلوب.")
+
+    participant = get_or_create_participant(safe_name, ref_code=ref_code)
     now = timezone.now()
+
     pending_reservations = Juz.objects.filter(
         reserved_by__iexact=safe_name,
         completed_at__isnull=True,
@@ -404,18 +790,35 @@ def get_profile_stats(name: str) -> dict:
     ).count()
     completed_total = Juz.objects.filter(completed_by__iexact=safe_name).count()
 
+    invite_stats = get_participant_invite_stats(participant)
+    team_membership = TeamMembership.objects.select_related("team").filter(participant=participant).first()
+    team_payload = build_team_payload(team_membership.team, include_members=False) if team_membership else None
+
     return {
-        "name": participant.name if participant else safe_name,
-        "reservations_count": reservations_count,
-        "completions_count": completions_count,
-        "tasbeeh_count": tasbeeh_count,
+        "name": participant.name,
+        "reservations_count": participant.reservations_count,
+        "completions_count": participant.completions_count,
+        "tasbeeh_count": participant.tasbeeh_count,
+        "dua_count": participant.dua_count,
         "pending_reservations": pending_reservations,
         "completed_total": completed_total,
-        "updated_at": updated_at,
+        "updated_at": participant.updated_at,
+        "referral_code": participant.referral_code,
+        "invite_link": build_invite_link(participant.referral_code),
+        "referred_by_name": participant.referred_by.name if participant.referred_by else "",
+        "streak_days": participant.streak_days,
+        "best_streak_days": participant.best_streak_days,
+        "points": participant_points(participant),
+        "team": team_payload,
+        "certificate": build_certificate_payload(participant, invite_stats["invited_people_count"]),
+        **invite_stats,
         "badges": build_badges(
-            reservations_count=reservations_count,
-            completions_count=completions_count,
-            tasbeeh_count=tasbeeh_count,
+            reservations_count=participant.reservations_count,
+            completions_count=participant.completions_count,
+            tasbeeh_count=participant.tasbeeh_count,
+            dua_count=participant.dua_count,
+            invite_count=invite_stats["invited_people_count"],
+            streak_days=participant.streak_days,
         ),
     }
 
@@ -491,6 +894,49 @@ def get_daily_wird() -> dict:
         "body": entry["body"],
         "dua": entry["dua"],
         "tasbeeh_phrase": entry["tasbeeh_phrase"],
+    }
+
+
+def get_ramadan_impact(*, inviter_limit: int = 10, team_limit: int = 8) -> dict:
+    totals = ParticipantProgress.objects.aggregate(
+        total_reservations=Sum("reservations_count"),
+        total_completions=Sum("completions_count"),
+        total_tasbeeh=Sum("tasbeeh_count"),
+        total_dua=Sum("dua_count"),
+    )
+
+    total_reservations = totals.get("total_reservations") or 0
+    total_completions = totals.get("total_completions") or 0
+    total_tasbeeh = totals.get("total_tasbeeh") or 0
+    total_dua = totals.get("total_dua") or 0
+
+    active_participants = ParticipantProgress.objects.filter(
+        Q(reservations_count__gt=0)
+        | Q(completions_count__gt=0)
+        | Q(tasbeeh_count__gt=0)
+        | Q(dua_count__gt=0)
+    ).count()
+
+    total_referred = ParticipantProgress.objects.exclude(referred_by__isnull=True).count()
+    total_referral_actions = ReferralAction.objects.count()
+
+    impact_score = int((total_completions * 10) + (total_tasbeeh // 5) + (total_dua * 5) + total_reservations)
+
+    return {
+        "generated_at": timezone.now(),
+        "public_url": public_site_url(),
+        "active_participants": active_participants,
+        "total_referred_participants": total_referred,
+        "total_referral_actions": total_referral_actions,
+        "completed_khatmas": Khatma.objects.filter(is_completed=True).count(),
+        "total_reservations": total_reservations,
+        "total_completions": total_completions,
+        "total_tasbeeh": total_tasbeeh,
+        "total_dua": total_dua,
+        "impact_score": impact_score,
+        "target_completions": 3000,
+        "top_inviters": get_invite_leaderboard(limit=inviter_limit),
+        "top_teams": get_teams_leaderboard(limit=team_limit),
     }
 
 

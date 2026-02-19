@@ -12,13 +12,15 @@ function StatCard({ title, value, subtitle, tone }) {
 
 export default function StatsSection({ stats }) {
   return (
-    <section className="grid gap-3 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+    <section className="grid gap-3 min-[480px]:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
       <StatCard title="الختمات المكتملة" value={stats.total_completed_khatmas ?? 0} tone="bg-goldLight/80" />
       <StatCard title="الختمة الحالية" value={stats.current_khatma_number ?? 1} tone="bg-emeraldSoft/80" />
       <StatCard title="الأجزاء المحجوزة" value={`${stats.reserved_count ?? 0} / 30`} tone="bg-goldSoft/80" />
       <StatCard title="الأجزاء المكتملة" value={`${stats.completed_count ?? 0} / 30`} tone="bg-emerald-200/80" />
       <StatCard title="إجمالي المشاركين" value={stats.total_participants ?? 0} tone="bg-emerald-300/80" />
       <StatCard title="قرب انتهاء المهلة" value={stats.due_soon_count ?? 0} tone="bg-rubySoft/75" subtitle="خلال ساعة" />
+      <StatCard title="مشاركون عبر الدعوات" value={stats.total_referred_participants ?? 0} tone="bg-goldLight/70" />
+      <StatCard title="عدد الفرق" value={stats.teams_count ?? 0} tone="bg-emeraldSoft/70" />
     </section>
   );
 }

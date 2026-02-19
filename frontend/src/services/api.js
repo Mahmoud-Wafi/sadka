@@ -69,8 +69,12 @@ export const createDua = async (payload) => {
   return data;
 };
 
-export const getProfileStats = async (name) => {
-  const { data } = await api.get("/profile-stats/", { params: { name } });
+export const getProfileStats = async (name, refCode = "") => {
+  const params = { name };
+  if (refCode) {
+    params.ref_code = refCode;
+  }
+  const { data } = await api.get("/profile-stats/", { params });
   return data;
 };
 
@@ -81,6 +85,33 @@ export const getKhatmaHistory = async (limit = 20) => {
 
 export const getDailyWird = async () => {
   const { data } = await api.get("/daily-wird/");
+  return data;
+};
+
+export const getInviteLeaderboard = async (limit = 20) => {
+  const { data } = await api.get("/invite-leaderboard/", { params: { limit } });
+  return data;
+};
+
+export const getRamadanImpact = async (invitersLimit = 10, teamsLimit = 8) => {
+  const { data } = await api.get("/ramadan-impact/", {
+    params: { inviters_limit: invitersLimit, teams_limit: teamsLimit }
+  });
+  return data;
+};
+
+export const getTeams = async (limit = 20) => {
+  const { data } = await api.get("/teams/", { params: { limit } });
+  return data;
+};
+
+export const createTeam = async (payload) => {
+  const { data } = await api.post("/teams/", payload);
+  return data;
+};
+
+export const joinTeam = async (payload) => {
+  const { data } = await api.post("/teams/join/", payload);
   return data;
 };
 

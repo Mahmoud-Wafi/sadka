@@ -1,6 +1,16 @@
 from django.contrib import admin
 
-from .models import ActivityEvent, DuaMessage, Juz, Khatma, ParticipantProgress, TasbeehCounter
+from .models import (
+    ActivityEvent,
+    DuaMessage,
+    Juz,
+    Khatma,
+    ParticipantProgress,
+    ReferralAction,
+    TasbeehCounter,
+    TeamGroup,
+    TeamMembership,
+)
 
 
 @admin.register(Khatma)
@@ -41,6 +51,38 @@ class DuaMessageAdmin(admin.ModelAdmin):
 
 @admin.register(ParticipantProgress)
 class ParticipantProgressAdmin(admin.ModelAdmin):
-    list_display = ("name", "reservations_count", "completions_count", "tasbeeh_count", "updated_at")
+    list_display = (
+        "name",
+        "referral_code",
+        "referred_by",
+        "reservations_count",
+        "completions_count",
+        "tasbeeh_count",
+        "dua_count",
+        "streak_days",
+        "updated_at",
+    )
     search_fields = ("name",)
     readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(ReferralAction)
+class ReferralActionAdmin(admin.ModelAdmin):
+    list_display = ("inviter", "invited", "action_type", "created_at")
+    list_filter = ("action_type",)
+    search_fields = ("inviter__name", "invited__name")
+    readonly_fields = ("created_at",)
+
+
+@admin.register(TeamGroup)
+class TeamGroupAdmin(admin.ModelAdmin):
+    list_display = ("name", "code", "target_points", "created_by", "created_at")
+    search_fields = ("name", "code")
+    readonly_fields = ("created_at",)
+
+
+@admin.register(TeamMembership)
+class TeamMembershipAdmin(admin.ModelAdmin):
+    list_display = ("team", "participant", "joined_at")
+    search_fields = ("team__name", "team__code", "participant__name")
+    readonly_fields = ("joined_at",)
