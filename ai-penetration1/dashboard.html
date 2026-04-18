@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Penetration - نظام الفحص الأمني الذكي</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- CSS الخاص -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/enhancements.css">
+
+    <!-- Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="auth-loading">
+    <!-- شريط التنقل -->
+    <nav class="navbar navbar-expand-lg cyber-nav" id="mainNavbar">
+        <div class="container">
+
+            <!-- Brand -->
+            <a class="navbar-brand cyber-brand" href="#">
+                <div class="logo-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="brand-copy">
+                    <span class="brand-text">AI Penetration</span>
+                    <small class="brand-subtext">نظام الفحص الأمني الذكي</small>
+                </div>
+            </a>
+
+            <!-- Mobile: lang pill + hamburger -->
+            <div class="d-flex align-items-center gap-2 d-lg-none">
+                <button class="lang-pill-toggle" id="languageToggleMobile"
+                    type="button" onclick="toggleLanguage()"
+                    aria-label="تبديل اللغة" data-active="ar">
+                    <span class="lang-pill-option" data-lang="ar">AR</span>
+                    <span class="lang-pill-option" data-lang="en">EN</span>
+                </button>
+                <button class="cyber-toggler navbar-toggler" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false"
+                    aria-label="Toggle navigation">
+                    <span class="cyber-toggler-bar"></span>
+                    <span class="cyber-toggler-bar"></span>
+                    <span class="cyber-toggler-bar"></span>
+                </button>
+            </div>
+
+            <!-- Collapsible content -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+
+                <!-- Nav links — centered -->
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#home">
+                            <i class="fas fa-home"></i><span>الرئيسية</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#scan">
+                            <i class="fas fa-crosshairs"></i><span>الفحص</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#history">
+                            <i class="fas fa-history"></i><span>السجل</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#tools">
+                            <i class="fas fa-tools"></i><span>الأدوات</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#about">
+                            <i class="fas fa-info-circle"></i><span>حول</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#contact">
+                            <i class="fas fa-address-card"></i><span>تواصل</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Right-side actions -->
+                <div class="navbar-actions">
+
+                    <!-- System status badge -->
+                    <span class="nav-status-badge" id="systemStatus">
+                        <i class="fas fa-circle"></i>
+                        <span>متصل</span>
+                    </span>
+
+                    <!-- Language pill toggle (desktop) -->
+                    <button class="lang-pill-toggle d-none d-lg-flex" id="languageToggle"
+                        type="button" onclick="toggleLanguage()"
+                        aria-label="تبديل اللغة" data-active="ar">
+                        <span class="lang-pill-option" data-lang="ar">AR</span>
+                        <span class="lang-pill-option" data-lang="en">EN</span>
+                    </button>
+
+                    <!-- Logout -->
+                    <a class="nav-logout-btn" href="/login/" onclick="logoutUser(event)">
+                        <i class="fas fa-right-from-bracket"></i>
+                        <span>خروج</span>
+                    </a>
+
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- القسم الرئيسي -->
+    <div class="container-fluid main-container">
+        <!-- البانر -->
+        <div class="row hero-section reveal" id="home">
+            <div class="col-lg-6 hero-content">
+                <h1 class="hero-title">
+                    <span class="gradient-text">AI Penetration</span> نظام الفحص الأمني المتكامل
+                </h1>
+                <p class="hero-description">
+                    نظام ذكي يجمع بين أدوات الاختراق التقليدية والذكاء الاصطناعي لتقديم تحليل شامل وتوصيات ذكية لأمن الشبكات والتطبيقات.
+                </p>
+                <a href="#scan" class="hero-cta-btn">
+                    <i class="fas fa-play-circle"></i>
+                    ابدأ الفحص الآن
+                </a>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <div class="stat-number" id="totalScans">0</div>
+                        <div class="stat-label">فحص مكتمل</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="toolsCount">4</div>
+                        <div class="stat-label">أداة فعالة</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">100%</div>
+                        <div class="stat-label">دقة تحليل</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 hero-image">
+                <div class="cyber-card illustration-card">
+                    <div class="scan-animation">
+                        <div class="target-circle">
+                            <i class="fas fa-bullseye"></i>
+                        </div>
+                        <div class="scan-wave"></div>
+                        <div class="scan-wave delay-1"></div>
+                        <div class="scan-wave delay-2"></div>
+                    </div>
+                    <div class="illustration-text">
+                        <h4>فحص ذكي في خطوات بسيطة</h4>
+                        <ol>
+                            <li>أدخل عنوان الهدف</li>
+                            <li>اختر أدوات الفحص</li>
+                            <li>احصل على تحليل مفصل</li>
+                            <li>طبق التوصيات الأمنية</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- قسم الفحص -->
+        <div class="row section-dark" id="scan">
+            <div class="col-12">
+                <h2 class="section-title">
+                    <i class="fas fa-crosshairs me-2"></i> بدء فحص جديد
+                </h2>
+
+                <div class="row">
+                    <div class="col-lg-8">
+                        <!-- بطاقة إدخال الهدف -->
+                        <div class="cyber-card input-card">
+                            <div class="card-header">
+                                <h4>
+                                    <i class="fas fa-bullseye me-2 text-primary"></i> إدخال الهدف
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        <i class="fas fa-globe me-1"></i>
+                                        عنوان الهدف (URL أو IP)
+                                    </label>
+                                    <div class="input-group input-group-lg">
+                                        <span class="input-group-text bg-dark">
+                                            <i class="fas fa-link"></i>
+                                        </span>
+                                        <input type="text" id="targetInput" class="form-control cyber-input" placeholder="مثال: testphp.vulnweb.com أو 192.168.1.1" value="testphp.vulnweb.com">
+                                        <button class="btn btn-outline-primary" onclick="suggestTargets()">
+                                            <i class="fas fa-lightbulb"></i>
+                                            اقتراحات
+                                        </button>
+                                        <button class="btn btn-outline-success" type="button" onclick="openTargetWebsite()">
+                                            <i class="fas fa-up-right-from-square"></i>
+                                            فتح الموقع
+                                        </button>
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1 text-info"></i> للمواقع التجريبية فقط. مثال: testphp.vulnweb.com, demo.testfire.net
+                                    </div>
+                                    <div class="target-rules mt-2">
+                                        <div class="small text-warning mb-1">
+                                            <i class="fas fa-shield-alt me-1"></i> قواعد فتح الموقع:
+                                        </div>
+                                        <ul class="small mb-0">
+                                            <li>نطاقات تجريبية معتمدة: testphp.vulnweb.com و demo.testfire.net</li>
+                                            <li>مسموح localhost و 127.0.0.1</li>
+                                            <li>عناوين الشبكات الخاصة فقط: 10.x.x.x و 192.168.x.x و 172.16-31.x.x</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!-- أدوات سريعة -->
+                                <div class="quick-targets mt-3">
+                                    <label class="form-label mb-2">
+                                        <i class="fas fa-bolt me-1"></i>
+                                        أهداف سريعة للتجربة:
+                                    </label>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <button class="btn btn-sm btn-outline-info" onclick="setTarget('testphp.vulnweb.com')">
+                                            testphp.vulnweb.com
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-info" onclick="setTarget('demo.testfire.net')">
+                                            demo.testfire.net
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-info" onclick="setTarget('localhost')">
+                                            localhost
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-info" onclick="setTarget('127.0.0.1')">
+                                            127.0.0.1
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- بطاقة اختيار الأدوات -->
+                        <div class="cyber-card tools-card mt-4">
+                            <div class="tool-select-toolbar">
+                                <button type="button" id="selectAllTools" onclick="selectAllTools(true)">اختر الكل</button>
+                                <button type="button" id="deselectAllTools" onclick="selectAllTools(false)">إلغاء الكل</button>
+                            </div>
+                            <div class="card-header">
+                                <h4>
+                                    <i class="fas fa-tools me-2 text-warning"></i> أدوات الفحص
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <!-- Nmap -->
+                                    <div class="col-md-6 mb-3">
+                                        <div class="tool-selector" data-tool="nmap">
+                                            <div class="tool-header">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="toolNmap" checked>
+                                                    <label class="form-check-label" for="toolNmap">
+                                                        <i class="fas fa-network-wired tool-icon nmap"></i>
+                                                        <strong>Nmap</strong>
+                                                    </label>
+                                                </div>
+                                                <span class="badge tool-badge" id="nmapStatus">جاهز</span>
+                                            </div>
+                                            <div class="tool-description">
+                                                فحص المنافذ المفتوحة والخدمات النشطة
+                                            </div>
+                                            <div class="tool-options">
+                                                <select class="form-select form-select-sm mt-2" id="nmapType">
+                                                    <option value="quick">فحص سريع</option>
+                                                    <option value="standard">فحص قياسي</option>
+                                                    <option value="full">فحص كامل</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- OWASPZap -->
+                                    <div class="col-md-6 mb-3">
+                                        <div class="tool-selector" data-tool="owaspzap">
+                                            <div class="tool-header">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="toolOWASPZap" checked>
+                                                    <label class="form-check-label" for="toolOWASPZap">
+                                                        <i class="fas fa-search tool-icon owaspzap"></i>
+                                                        <strong>OWASPZap</strong>
+                                                    </label>
+                                                </div>
+                                                <span class="badge tool-badge" id="owaspzapStatus">جاهز</span>
+                                            </div>
+                                            <div class="tool-description">
+                                                اكتشاف ثغرات تطبيقات الويب
+                                            </div>
+                                            <div class="tool-options">
+                                                <select class="form-select form-select-sm mt-2" id="owaspzapTuning">
+                                                    <option value="1">فحص أساسي</option>
+                                                    <option value="1234">فحص متقدم</option>
+                                                    <option value="1234567">فحص شامل</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- SQLMap -->
+                                    <div class="col-md-6 mb-3">
+                                        <div class="tool-selector" data-tool="sqlmap">
+                                            <div class="tool-header">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="toolSqlmap">
+                                                    <label class="form-check-label" for="toolSqlmap">
+                                                        <i class="fas fa-database tool-icon sqlmap"></i>
+                                                        <strong>SQLMap</strong>
+                                                    </label>
+                                                </div>
+                                                <span class="badge tool-badge" id="sqlmapStatus">جاهز</span>
+                                            </div>
+                                            <div class="tool-description">
+                                                كشف ثغرات حقن SQL
+                                            </div>
+                                            <div class="warning-text">
+                                                <i class="fas fa-exclamation-triangle text-warning"></i> للمواقع التجريبية فقط
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- WhatWeb -->
+                                    <div class="col-md-6 mb-3">
+                                        <div class="tool-selector" data-tool="whatweb">
+                                            <div class="tool-header">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="toolWhatWeb">
+                                                    <label class="form-check-label" for="toolWhatWeb">
+                                                        <i class="fas fa-fingerprint tool-icon whatweb"></i>
+                                                        <strong>WhatWeb</strong>
+                                                    </label>
+                                                </div>
+                                                <span class="badge tool-badge" id="whatwebStatus">جاهز</span>
+                                            </div>
+                                            <div class="tool-description">
+                                                تحليل بصمة تقنيات الويب والخوادم والإضافات الظاهرة
+                                            </div>
+                                            <div class="warning-text">
+                                                <i class="fas fa-exclamation-triangle text-warning"></i> استخدمه على الأهداف المصرح بها فقط
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <!-- بطاقة التحكم -->
+                        <div class="cyber-card control-card">
+                            <div class="card-header">
+                                <h4>
+                                    <i class="fas fa-sliders-h me-2 text-success"></i> إعدادات الفحص
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-4">
+                                    <label class="form-label">
+                                        <i class="fas fa-cog me-1"></i>
+                                        سرعة الفحص
+                                    </label>
+                                    <select class="form-select cyber-select" id="scanSpeed">
+                                        <option value="fast">سريع (مستوى أساسي)</option>
+                                        <option value="normal" selected>عادي (مستوى متوازن)</option>
+                                        <option value="slow">شامل (مستوى مفصل)</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="form-label">
+                                        <i class="fas fa-robot me-1"></i>
+                                        تحليل الذكاء الاصطناعي
+                                    </label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="enableAI" checked>
+                                        <label class="form-check-label" for="enableAI">
+                                            تفعيل التحليل الذكي
+                                        </label>
+                                    </div>
+                                    <div class="form-text">
+                                        سيتم تحليل النتائج وتقديم توصيات ذكية
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="form-label">
+                                        <i class="fas fa-save me-1"></i>
+                                        حفظ النتائج
+                                    </label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="saveReport" checked>
+                                        <label class="form-check-label" for="saveReport">
+                                            حفظ التقرير في السجل
+                                    </div>
+
+                                    <div class="scan-guardrails mt-4">
+                                        <h6 class="text-uppercase mb-3">
+                                            <i class="fas fa-shield-alt me-2"></i> حدود الفحص (Guardrails)
+                                        </h6>
+                                        <ul class="scan-guardrails-list">
+                                            <li>الأهداف المصرح بها فقط</li>
+                                            <li>يفضل استخدام بيئات تجريبية أو خاصة</li>
+                                            <li>راجع التوصيات قبل المعالجة</li>
+                                        </ul>
+                                    </div>
+
+                                    <div class="estimated-time mt-4">
+                                        <h5>
+                                            <i class="fas fa-clock me-2"></i> الوقت المتوقع
+                                        </h5>
+                                        <div class="time-display" id="estimatedTime">~ 2 دقيقة</div>
+                                    </div>
+
+                                    <div class="d-grid gap-2 mt-4">
+                                        <button class="btn cyber-btn-primary btn-lg" onclick="startScan()">
+                                            <i class="fas fa-play-circle me-2"></i>
+                                            بدء الفحص
+                                        </button>
+                                        <button class="btn btn-outline-light btn-sm" onclick="clearForm()">
+                                            <i class="fas fa-redo me-1"></i>
+                                            مسح النموذج
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- حالة النظام -->
+                            <div class="cyber-card status-card mt-4">
+                                <div class="card-header">
+                                    <h5>
+                                        <i class="fas fa-heartbeat me-2 text-danger"></i> حالة النظام
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="system-status-item">
+                                        <span>API الخادم</span>
+                                        <span class="badge bg-success" id="apiStatus">نشط</span>
+                                    </div>
+                                    <div class="system-status-item">
+                                        <span>قاعدة البيانات</span>
+                                        <span class="badge bg-success">نشط</span>
+                                    </div>
+                                    <div class="system-status-item">
+                                        <span>الذاكرة</span>
+                                        <span class="badge bg-info" id="memoryUsage">65%</span>
+                                    </div>
+                                    <div class="system-status-item">
+                                        <span>المهام النشطة</span>
+                                        <span class="badge bg-warning" id="activeTasks">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- قسم التقدم (مخفي في البداية) -->
+            <div class="row section-dark" id="progressSection" style="display: none;">
+                <div class="col-12">
+                    <div class="cyber-card progress-card">
+                        <div class="progress-header">
+                            <h3>
+                                <i class="fas fa-sync-alt fa-spin me-2 text-primary"></i> جاري تنفيذ الفحص
+                            </h3>
+                            <div class="scan-info">
+                                <span id="currentTarget">testphp.vulnweb.com</span>
+                                <span class="badge bg-dark ms-2" id="elapsedTime">00:00</span>
+                            </div>
+                        </div>
+
+                        <div class="progress-body">
+                            <div class="row g-3 mb-4 progress-metrics-row">
+                                <div class="col-md-4">
+                                    <div class="progress-metric-card">
+                                        <div class="progress-metric-label">نسبة الاكتمال</div>
+                                        <div class="progress-metric-value" id="scanCompletionScore">0%</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="progress-metric-card">
+                                        <div class="progress-metric-label">المرحلة الحالية</div>
+                                        <div class="progress-metric-value" id="scanCurrentPhase">في الانتظار</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="progress-metric-card">
+                                        <div class="progress-metric-label">الوقت المتبقي المتوقع</div>
+                                        <div class="progress-metric-value" id="scanEta">--:--</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- شريط التقدم الرئيسي -->
+                            <div class="main-progress mb-4">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>التقدم العام</span>
+                                    <span id="overallProgress">0%</span>
+                                </div>
+                                <div class="progress cyber-progress">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                        id="mainProgressBar" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <!-- تقدم الأدوات -->
+                            <div class="tools-progress">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-tasks me-2"></i> تقدم الأدوات
+                                </h5>
+                                <div id="toolsProgressContainer">
+                                    <!-- سيتم إضافته ديناميكياً -->
+                                </div>
+                            </div>
+
+                            <!-- النتائج الأولية -->
+                            <div class="preliminary-results mt-4" id="preliminaryResults" style="display: none;">
+                                <h5>
+                                    <i class="fas fa-chart-line me-2 text-info"></i> نتائج أولية
+                                </h5>
+                                <div class="row" id="quickResults">
+                                    <!-- سيتم إضافته ديناميكياً -->
+                                </div>
+                            </div>
+
+                            <!-- Terminal log -->
+                            <div class="scan-terminal" id="scanTerminal" style="display:none;">
+                                <div id="scanTerminalLines"></div>
+                            </div>
+
+                            <!-- التحكم في الفحص -->
+                            <div class="scan-controls mt-4 text-center">
+                                <button class="btn btn-outline-danger btn-sm" onclick="cancelScan()">
+                                    <i class="fas fa-stop-circle me-1"></i>
+                                    إلغاء الفحص
+                                </button>
+                                <button class="btn btn-outline-info btn-sm ms-2" onclick="pauseResumeScan()">
+                                    <i class="fas fa-pause-circle me-1"></i>
+                                    <span id="pauseResumeText">إيقاف مؤقت</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- قسم النتائج (مخفي في البداية) -->
+            <div class="row section-dark" id="resultsSection" style="display: none;">
+                <div class="col-12">
+                    <div class="cyber-card results-card">
+                        <div class="results-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h3 class="text-success">
+                                        <i class="fas fa-check-circle me-2"></i> نتائج الفحص
+                                    </h3>
+                                    <div class="scan-meta">
+                                        <span>
+                                            <i class="fas fa-globe me-1"></i>
+                                            <strong id="resultTarget">testphp.vulnweb.com</strong>
+                                        </span>
+                                        <span class="mx-3">•</span>
+                                        <span>
+                                            <i class="fas fa-clock me-1"></i>
+                                            <span id="resultTime">منذ 2 دقيقة</span>
+                                        </span>
+                                        <span class="mx-3">•</span>
+                                        <span>
+                                            <i class="fas fa-barcode me-1"></i>
+                                            ID: <span id="resultTaskId">abcd1234</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <select class="form-select form-select-sm report-format-select d-inline-block me-2"
+                                        id="reportFormat">
+                                        <option value="txt">Text Report</option>
+                                        <option value="summary">Executive Summary</option>
+                                        <option value="technical">Technical Report</option>
+                                        <option value="json">JSON Export</option>
+                                    </select>
+                                    <button class="btn btn-outline-light btn-sm me-2" onclick="downloadReport()">
+                                        <i class="fas fa-download me-1"></i>
+                                        تصدير التقرير
+                                    </button>
+                                    <button class="btn btn-outline-warning btn-sm" onclick="clearResults()">
+                                        <i class="fas fa-times me-1"></i>
+                                        إغلاق
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- تبويبات النتائج -->
+                        <div class="results-tabs">
+                            <ul class="nav nav-tabs cyber-tabs" id="resultsTab" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="summary-tab" data-bs-toggle="tab"
+                                        data-bs-target="#summary">
+                                        <i class="fas fa-chart-pie me-1"></i>
+                                        الملخص
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="details-tab" data-bs-toggle="tab"
+                                        data-bs-target="#details">
+                                        <i class="fas fa-search me-1"></i>
+                                        التفاصيل
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="ai-tab" data-bs-toggle="tab" data-bs-target="#ai">
+                                        <i class="fas fa-brain me-1"></i>
+                                        تحليل الذكاء الاصطناعي
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="recommendations-tab" data-bs-toggle="tab"
+                                        data-bs-target="#recommendations">
+                                        <i class="fas fa-lightbulb me-1"></i>
+                                        التوصيات
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="raw-tab" data-bs-toggle="tab" data-bs-target="#raw">
+                                        <i class="fas fa-code me-1"></i>
+                                        النتائج الخام
+                                    </button>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content" id="resultsTabContent">
+                                <!-- تبويب الملخص -->
+                                <div class="tab-pane fade show active" id="summary" role="tabpanel">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="summary-card">
+                                                <h5>
+                                                    <i class="fas fa-exclamation-triangle me-2"></i> مستوى الخطورة
+                                                </h5>
+                                                <div class="risk-level" id="riskLevel">
+                                                    <div class="risk-indicator high">
+                                                        <div class="risk-label">عالية</div>
+                                                        <div class="risk-bar">
+                                                            <div class="risk-fill" style="width: 80%"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="summary-card mt-3">
+                                                <h5>
+                                                    <i class="fas fa-chart-bar me-2"></i> إحصائيات
+                                                </h5>
+                                                <div class="stats-grid">
+                                                    <div class="stat-box">
+                                                        <div class="stat-value" id="statPorts">12</div>
+                                                        <div class="stat-label">منفذ مفتوح</div>
+                                                    </div>
+                                                    <div class="stat-box">
+                                                        <div class="stat-value" id="statVulns">8</div>
+                                                        <div class="stat-label">ثغرة</div>
+                                                    </div>
+                                                    <div class="stat-box">
+                                                        <div class="stat-value" id="statServices">5</div>
+                                                        <div class="stat-label">خدمة</div>
+                                                    </div>
+                                                    <div class="stat-box">
+                                                        <div class="stat-value" id="statRisk">80%</div>
+                                                        <div class="stat-label">مخاطرة</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <div class="summary-card">
+                                                <h5>
+                                                    <i class="fas fa-tachometer-alt me-2"></i> مؤشرات الأمن
+                                                </h5>
+                                                <canvas id="securityChart" height="200"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="insight-strip mt-3">
+                                        <div class="insight-card">
+                                            <div class="insight-label">درجة المخاطرة</div>
+                                            <div class="insight-value" id="insightRiskScore">0</div>
+                                        </div>
+                                        <div class="insight-card">
+                                            <div class="insight-label">الثقة بالنتائج</div>
+                                            <div class="insight-value" id="insightConfidenceScore">0</div>
+                                        </div>
+                                        <div class="insight-card">
+                                            <div class="insight-label">الاكتمال</div>
+                                            <div class="insight-value" id="insightCompletionScore">0</div>
+                                        </div>
+                                        <div class="insight-card">
+                                            <div class="insight-label">النتائج المكتشفة</div>
+                                            <div class="insight-value" id="insightFindingsCount">0</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row mt-3">
+                                        <div class="col-md-6">
+                                            <div class="summary-card">
+                                                <h5>
+                                                    <i class="fas fa-list-check me-2"></i> النتائج الرئيسية
+                                                </h5>
+                                                <div id="keyFindings">
+                                                    <!-- سيتم ملؤها ديناميكياً -->
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="summary-card">
+                                                <h5>
+                                                    <i class="fas fa-route me-2"></i> الخطوات التالية المقترحة
+                                                </h5>
+                                                <div id="nextActionsList">
+                                                    <!-- سيتم ملؤها ديناميكياً -->
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- تبويب التفاصيل -->
+                                <div class="tab-pane fade" id="details" role="tabpanel">
+                                    <div class="accordion" id="resultsAccordion">
+                                        <!-- سيتم ملؤها ديناميكياً -->
+                                    </div>
+                                </div>
+
+                                <!-- تبويب الذكاء الاصطناعي -->
+                                <div class="tab-pane fade" id="ai" role="tabpanel">
+                                    <div class="ai-analysis">
+                                        <div class="ai-header">
+                                            <div class="ai-avatar">
+                                                <i class="fas fa-robot"></i>
+                                            </div>
+                                            <div>
+                                                <h5>ملخص تحليل الذكاء الاصطناعي</h5>
+                                                <p class="text-muted">تحليل هيكلي بناءً على تقرير AI وأدلة الفحص</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="ai-content">
+                                            <div class="ai-section">
+                                                <h6>
+                                                    <i class="fas fa-search me-2"></i> الملخص التنفيذي
+                                                </h6>
+                                                <div id="aiAnalysis">
+                                                    <!-- سيتم ملؤها ديناميكياً -->
+                                                </div>
+                                            </div>
+
+                                            <div class="ai-section">
+                                                <h6>
+                                                    <i class="fas fa-project-diagram me-2"></i> القضايا ذات الأولوية
+                                                </h6>
+                                                <div id="aiRelationships">
+                                                    <!-- سيتم ملؤها ديناميكياً -->
+                                                </div>
+                                            </div>
+
+                                            <div class="ai-section">
+                                                <h6>
+                                                    <i class="fas fa-chart-line me-2"></i> خطة العمل
+                                                </h6>
+                                                <div id="aiPredictions">
+                                                    <!-- سيتم ملؤها ديناميكياً -->
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- تبويب التوصيات -->
+                                <div class="tab-pane fade" id="recommendations" role="tabpanel">
+                                    <div class="recommendations-list" id="recommendationsList">
+                                        <!-- سيتم ملؤها ديناميكياً -->
+                                    </div>
+                                </div>
+
+                                <!-- تبويب النتائج الخام -->
+                                <div class="tab-pane fade" id="raw" role="tabpanel">
+                                    <div class="raw-results">
+                                        <div class="raw-tools">
+                                            <h5>اختر الأداة لعرض نتائجها:</h5>
+                                            <div class="btn-group" role="group">
+                                                <button class="btn btn-outline-primary btn-sm"
+                                                    onclick="showRawResults('nmap')">
+                                                    Nmap
+                                                </button>
+                                                <button class="btn btn-outline-success btn-sm"
+                                                    onclick="showRawResults('owaspzap')">
+                                                    OWASPZap
+                                                </button>
+                                                <button class="btn btn-outline-warning btn-sm"
+                                                    onclick="showRawResults('sqlmap')">
+                                                    SQLMap
+                                                </button>
+                                                <button class="btn btn-outline-danger btn-sm"
+                                                    onclick="showRawResults('whatweb')">
+                                                    WhatWeb
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="raw-output mt-3">
+                                            <pre id="rawOutput">اختر أداة لعرض نتائجها...</pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- قسم السجل -->
+            <div class="row section-dark" id="history">
+                <div class="col-12">
+                    <h2 class="section-title">
+                        <i class="fas fa-history me-2"></i> سجل الفحوصات
+                    </h2>
+
+                    <div class="cyber-card history-card">
+                        <div class="history-overview-grid">
+                            <div class="history-metric-card">
+                                <div class="history-metric-label">الفحوصات</div>
+                                <div class="history-metric-value" id="historyTotalMetric">0</div>
+                            </div>
+                            <div class="history-metric-card">
+                                <div class="history-metric-label">متوسط المخاطر</div>
+                                <div class="history-metric-value" id="historyRiskMetric">0%</div>
+                            </div>
+                            <div class="history-metric-card">
+                                <div class="history-metric-label">معدل الاكتمال</div>
+                                <div class="history-metric-value" id="historyCompletionMetric">0%</div>
+                            </div>
+                            <div class="history-metric-card">
+                                <div class="history-metric-label">الفحوصات الحرجة</div>
+                                <div class="history-metric-value" id="historyCriticalMetric">0</div>
+                            </div>
+                        </div>
+
+                        <div class="history-trend-card" id="historyTrendText">
+                            بانتظار سجل الفحص لحساب أحدث الاتجاهات.
+                        </div>
+
+                        <div class="history-controls">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control cyber-input" placeholder="بحث في السجل..."
+                                        id="historySearch">
+                                </div>
+                                <div class="col-md-4">
+                                    <select class="form-select cyber-select" id="historyFilter">
+                                        <option value="all">جميع الفحوصات</option>
+                                        <option value="today">اليوم</option>
+                                        <option value="week">الأسبوع</option>
+                                        <option value="month">الشهر</option>
+                                        <option value="failed">الفاشلة</option>
+                                        <option value="completed">المكتملة</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <button class="btn btn-outline-primary w-100" onclick="refreshHistory()">
+                                        <i class="fas fa-sync-alt me-1"></i>
+                                        تحديث السجل
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="history-table-container">
+                            <table class="table table-dark table-hover history-table">
+                                <thead>
+                                    <tr>
+                                        <th>التاريخ</th>
+                                        <th>الهدف</th>
+                                        <th>الأدوات</th>
+                                        <th>الحالة</th>
+                                        <th>المدة</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historyTableBody">
+                                    <!-- سيتم ملؤها ديناميكياً -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="history-pagination">
+                            <nav>
+                                <ul class="pagination justify-content-center" id="historyPagination">
+                                    <!-- سيتم ملؤها ديناميكياً -->
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- قسم الأدوات -->
+            <div class="row section-dark" id="tools">
+                <div class="col-12">
+                    <h2 class="section-title">
+                        <i class="fas fa-tools me-2"></i> الأدوات المتاحة
+                    </h2>
+
+                    <div class="row">
+                        <!-- Nmap -->
+                        <div class="col-lg-3 col-md-6 mb-4">
+                            <div class="tool-info-card nmap">
+                                <div class="tool-icon-large">
+                                    <i class="fas fa-network-wired"></i>
+                                </div>
+                                <h4>Nmap</h4>
+                                <p class="tool-description">
+                                    أداة فحص الشبكات والمنافذ الأكثر شهرة في العالم. تكشف عن الأجهزة والخدمات النشطة.
+                                </p>
+                                <div class="tool-specs">
+                                    <div class="spec">
+                                        <i class="fas fa-bolt"></i>
+                                        <span>سريع وفعال</span>
+                                    </div>
+                                    <div class="spec">
+                                        <i class="fas fa-eye"></i>
+                                        <span>فحص دقيق</span>
+                                    </div>
+                                    <div class="spec">
+                                        <i class="fas fa-code"></i>
+                                        <span>نصوص مخصصة</span>
+                                    </div>
+                                </div>
+                                <div class="tool-version">
+                                    الإصدار: <span id="nmapVersion">7.94</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- OWASPZap -->
+                        <div class="col-lg-3 col-md-6 mb-4">
+                            <div class="tool-info-card owaspzap">
+                                <div class="tool-icon-large">
+                                    <i class="fas fa-search"></i>
+                                </div>
+                                <h4>OWASPZap</h4>
+                                <p class="tool-description">
+                                    تعمل عن طريق تقليد الهجمات على تطبيقات الويب لاكتشاف الثغرات الأمنية.
+                                </p>
+                                <div class="tool-specs">
+                                    <div class="spec">
+                                        <i class="fas fa-spider"></i>
+                                        <span>فحص تلقائي</span>
+                                    </div>
+                                    <div class="spec">
+                                        <i class="fas fa-bug"></i>
+                                        <span>6700+ فحص</span>
+                                    </div>
+                                    <div class="spec">
+                                        <i class="fas fa-file-alt"></i>
+                                        <span>تقارير متعددة</span>
+                                    </div>
+                                </div>
+                                <div class="tool-version">
+                                    الإصدار: <span id="owaspzapVersion">2.5.0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SQLMap -->
+                        <div class="col-lg-3 col-md-6 mb-4">
+                            <div class="tool-info-card sqlmap">
+                                <div class="tool-icon-large">
+                                    <i class="fas fa-database"></i>
+                                </div>
+                                <h4>SQLMap</h4>
+                                <p class="tool-description">
+                                    أداة اكتشاف واستغلال ثغرات حقن SQL. تدعم 6 أنواع من قواعد البيانات.
+                                </p>
+                                <div class="tool-specs">
+                                    <div class="spec">
+                                        <i class="fas fa-database"></i>
+                                        <span>قواعد متعددة</span>
+                                    </div>
+                                    <div class="spec">
+                                        <i class="fas fa-robot"></i>
+                                        <span>ذكاء اصطناعي</span>
+                                    </div>
+                                    <div class="spec">
+                                        <i class="fas fa-shield-alt"></i>
+                                        <span>وضع آمن</span>
+                                    </div>
+                                </div>
+                                <div class="tool-version">
+                                    الإصدار: <span id="sqlmapVersion">1.7</span>
+                                </div>
+                                <div class="tool-warning">
+                                    <i class="fas fa-exclamation-triangle"></i> للاستخدام الأخلاقي فقط
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- WhatWeb -->
+                        <div class="col-lg-3 col-md-6 mb-4">
+                            <div class="tool-info-card whatweb">
+                                <div class="tool-icon-large">
+                                    <i class="fas fa-fingerprint"></i>
+                                </div>
+                                <h4>WhatWeb</h4>
+                                <p class="tool-description">
+                                    أداة بصمة تقنية تحدد مكونات التطبيق والخادم والإعدادات المكشوفة.
+                                </p>
+                                <div class="tool-specs">
+                                    <div class="spec">
+                                        <i class="fas fa-fingerprint"></i>
+                                        <span>Technology fingerprinting</span>
+                                    </div>
+                                    <div class="spec">
+                                        <i class="fas fa-server"></i>
+                                        <span>Server stack discovery</span>
+                                    </div>
+                                    <div class="spec">
+                                        <i class="fas fa-shield-alt"></i>
+                                        <span>Exposure review</span>
+                                    </div>
+                                </div>
+                                <div class="tool-version">
+                                    الإصدار: <span id="whatwebVersion">0.5.5</span>
+                                </div>
+                                <div class="tool-warning">
+                                    <i class="fas fa-exclamation-triangle"></i> فعّل فقط على أهداف مفوضة
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- قسم حول المشروع -->
+            <div class="row section-dark" id="about">
+                <div class="col-12">
+                    <h2 class="section-title">
+                        <i class="fas fa-info-circle me-2"></i> حول المشروع
+                    </h2>
+
+                    <div class="cyber-card about-card">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="about-content">
+                                    <h3>AI Penetration System</h3>
+                                    <p>
+                                        نظام ذكي متكامل لفحص الثغرات الأمنية يجمع بين أدوات الاختراق التقليدية وقوة
+                                        الذكاء الاصطناعي لتقديم تحليل شامل وتوصيات ذكية.
+                                    </p>
+
+                                    <h4 class="mt-4">المميزات:</h4>
+                                    <ul class="features-list">
+                                        <li>
+                                            <i class="fas fa-check-circle text-success"></i> واجهة مستخدم عربية بديهية
+                                        </li>
+                                        <li>
+                                            <i class="fas fa-check-circle text-success"></i> دمج 4 أدوات أمنية متقدمة
+                                        </li>
+                                        <li>
+                                            <i class="fas fa-check-circle text-success"></i> تحليل ذكي باستخدام الذكاء
+                                            الاصطناعي
+                                        </li>
+                                        <li>
+                                            <i class="fas fa-check-circle text-success"></i> تقارير تفصيلية وتوصيات
+                                            عملية
+                                        </li>
+                                        <li>
+                                            <i class="fas fa-check-circle text-success"></i> سجل كامل لجميع الفحوصات
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="about-tech">
+                                    <h4>التقنيات المستخدمة:</h4>
+                                    <div class="tech-stack">
+                                        <div class="tech-item">
+                                            <div class="tech-icon">
+                                                <i class="fab fa-python"></i>
+                                            </div>
+                                            <div class="tech-info">
+                                                <div class="tech-name">Python/Django</div>
+                                                <div class="tech-desc">خلفية النظام وAPI</div>
+                                            </div>
+                                        </div>
+                                        <div class="tech-item">
+                                            <div class="tech-icon">
+                                                <i class="fab fa-js"></i>
+                                            </div>
+                                            <div class="tech-info">
+                                                <div class="tech-name">JavaScript</div>
+                                                <div class="tech-desc">واجهة تفاعلية</div>
+                                            </div>
+                                        </div>
+                                        <div class="tech-item">
+                                            <div class="tech-icon">
+                                                <i class="fab fa-bootstrap"></i>
+                                            </div>
+                                            <div class="tech-info">
+                                                <div class="tech-name">Bootstrap 5</div>
+                                                <div class="tech-desc">تصميم متجاوب</div>
+                                            </div>
+                                        </div>
+                                        <div class="tech-item">
+                                            <div class="tech-icon">
+                                                <i class="fas fa-brain"></i>
+                                            </div>
+                                            <div class="tech-info">
+                                                <div class="tech-name">OpenAI GPT</div>
+                                                <div class="tech-desc">تحليل ذكي</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="about-disclaimer mt-4">
+                                        <div class="alert alert-warning">
+                                            <h5>
+                                                <i class="fas fa-exclamation-triangle me-2"></i> تنبيه هام
+                                            </h5>
+                                            <p class="mb-0">
+                                                هذا النظام مخصص للاستخدام الأخلاقي والأكاديمي فقط. يمنع استخدامه على
+                                                أنظمة أو شبكات لا تملك تصريحاً بفحصها.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- قسم تواصل معنا -->
+            <div class="row section-dark" id="contact">
+                <div class="col-12">
+                    <h2 class="section-title">
+                        <i class="fas fa-address-card me-2"></i> تواصل معنا
+                    </h2>
+
+                    <div class="cyber-card contact-card">
+                        <div class="row g-4 align-items-stretch">
+                            <div class="col-lg-4">
+                                <div class="contact-intro-card">
+                                    <div class="contact-avatar">
+                                        <i class="fas fa-user-tie"></i>
+                                    </div>
+                                    <h3>PentaScanner Ai</h3>
+                                    <p class="contact-intro-text">
+                                        للتواصل المباشر بخصوص النظام أو الدعم أو الاستفسارات الفنية.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-4">
+                                <div class="contact-method-card">
+                                    <div class="contact-method-icon whatsapp">
+                                        <i class="fab fa-whatsapp"></i>
+                                    </div>
+                                    <div class="contact-method-label">رقم واتساب</div>
+                                    <div class="contact-method-value">01012568949</div>
+                                    <a class="btn btn-outline-success btn-sm mt-3" href="https://wa.me/201012568949"
+                                        target="_blank" rel="noopener noreferrer">
+                                        <i class="fab fa-whatsapp me-1"></i> فتح واتساب
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-4">
+                                <div class="contact-method-card">
+                                    <div class="contact-method-icon phone">
+                                        <i class="fas fa-phone-alt"></i>
+                                    </div>
+                                    <div class="contact-method-label">رقم الهاتف</div>
+                                    <div class="contact-method-value">01558715284</div>
+                                    <a class="btn btn-outline-info btn-sm mt-3" href="tel:+201558715284">
+                                        <i class="fas fa-phone-alt me-1"></i> اتصل الآن
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- تذييل الصفحة -->
+        <footer class="cyber-footer">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="footer-brand">
+                            <h5>
+                                <i class="fas fa-shield-alt me-2"></i> AI Penetration
+                            </h5>
+                            <p class="footer-description">
+                                نظام ذكي لفحص الثغرات الأمنية باستخدام الذكاء الاصطناعي
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="footer-links">
+                            <h6>روابط سريعة</h6>
+                            <ul>
+                                <li><a href="#home">الرئيسية</a></li>
+                                <li><a href="#scan">بدء فحص</a></li>
+                                <li><a href="#history">سجل الفحوصات</a></li>
+                                <li><a href="#tools">الأدوات</a></li>
+                                <li><a href="#contact">تواصل معنا</a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 text-end">
+                        <div class="footer-stats">
+                            <span class="stat">
+                                <i class="fas fa-server"></i>
+                                خادم: <span id="footerServerStatus">نشط</span>
+                            </span>
+                            <span class="stat mx-3">
+                                <i class="fas fa-database"></i>
+                                فحوصات: <span id="footerScansCount">0</span>
+                            </span>
+                            <span class="stat">
+                                <i class="fas fa-clock"></i>
+                                وقت التشغيل: <span id="footerUptime">00:00:00</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-copyright">
+                &copy; <span id="footerYear"></span> AI Penetration — نظام الفحص الأمني الذكي. جميع الحقوق محفوظة.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to top button -->
+    <button id="backToTop" onclick="scrollToTop()" title="Back to top">
+        <i class="fas fa-chevron-up"></i>
+    </button>
+
+    <!-- مكتبات JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- ملف JavaScript الرئيسي -->
+    <script src="js/js.js"></script>
+</body>
+
+</html>

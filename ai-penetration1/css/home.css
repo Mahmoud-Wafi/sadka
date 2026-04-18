@@ -1,0 +1,513 @@
+/* =====================================================
+   home.css — Single CSS file for index.html (landing page)
+   AI Penetration
+   ===================================================== */
+
+/* ── Google Fonts are loaded via <link> in the HTML ── */
+
+/* ─── Reset & base ─────────────────────────────────── */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+    transition: font-family 0.3s ease;
+}
+
+/* ─── Design tokens ────────────────────────────────── */
+:root {
+    --neon-teal:   #00ffcc;
+    --neon-blue:   #0088ff;
+    --dark-surface: rgba(15, 20, 30, 0.7);
+    --glass-border: rgba(0, 255, 204, 0.2);
+}
+
+/* ─── Body ─────────────────────────────────────────── */
+body {
+    background-color: #050810;
+    color: #ffffff;
+    overflow-x: hidden;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Cairo', sans-serif;
+    background-image:
+        radial-gradient(circle at 15% 50%, rgba(0, 255, 204, 0.08), transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(0, 136, 255, 0.08), transparent 25%);
+}
+
+/* ─── Custom scrollbar ─────────────────────────────── */
+::-webkit-scrollbar          { width: 6px; height: 6px; }
+::-webkit-scrollbar-track    { background: #020617; }
+::-webkit-scrollbar-thumb    { background: #0ea5e9; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #38bdf8; }
+
+/* ─── Navbar ───────────────────────────────────────── */
+.landing-nav {
+    padding: 1rem 0;
+    background: var(--dark-surface);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-bottom: 1px solid var(--glass-border);
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.landing-nav.scrolled {
+    padding: 0.7rem 0;
+    background: rgba(5, 8, 16, 0.9);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+}
+
+.cyber-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+}
+
+.cyber-brand .logo-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--neon-teal), var(--neon-blue));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: #000;
+    box-shadow: 0 0 15px rgba(0, 255, 204, 0.4);
+}
+
+.brand-text {
+    font-size: 1.4rem;
+    font-weight: 800;
+    background: linear-gradient(to right, #fff, var(--neon-teal));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Navbar Actions */
+.nav-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+/* ─── Language Switcher Button ─────────────────────── */
+.btn-lang {
+    background: rgba(0, 255, 204, 0.08);
+    color: var(--neon-teal);
+    border: 1px solid rgba(0, 255, 204, 0.35);
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.3px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+.btn-lang:hover {
+    background: rgba(0, 255, 204, 0.18);
+    border-color: var(--neon-teal);
+    color: var(--neon-teal);
+    box-shadow: 0 0 12px rgba(0, 255, 204, 0.25);
+    transform: translateY(-2px);
+}
+.btn-lang span:first-child { font-size: 1rem; }
+
+/* ─── Shared button base ───────────────────────────── */
+.btn-login {
+    background: var(--dark-surface);
+    color: #fff;
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(5px);
+    border-radius: 50px;
+    padding: 0.4rem 1rem;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.3s ease;
+}
+.btn-login:hover {
+    background: rgba(0, 255, 204, 0.1);
+    border-color: var(--neon-teal);
+    color: var(--neon-teal);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.btn-signup {
+    background: linear-gradient(135deg, var(--neon-teal) 0%, var(--neon-blue) 100%);
+    color: #050810;
+    border: none;
+    border-radius: 50px;
+    padding: 0.4rem 1rem;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    box-shadow: 0 10px 20px rgba(0, 255, 204, 0.2);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+.btn-signup::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--neon-blue) 0%, var(--neon-teal) 100%);
+    z-index: -1;
+    transition: opacity 0.4s ease;
+    opacity: 0;
+}
+.btn-signup:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 15px 25px rgba(0, 255, 204, 0.4);
+    color: #000;
+}
+.btn-signup:hover::before { opacity: 1; }
+
+/* ─── Hero Section ─────────────────────────────────── */
+.landing-hero {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 8rem 0 4rem;
+    min-height: 100vh;
+    position: relative;
+}
+
+.hero-title {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+    line-height: 1.3;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+.gradient-text-alt {
+    background: linear-gradient(45deg, var(--neon-teal), var(--neon-blue));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+}
+
+.hero-subtitle {
+    font-size: clamp(1.1rem, 2vw, 1.25rem);
+    color: #a0aec0;
+    margin-bottom: 2.5rem;
+    line-height: 1.8;
+    max-width: 90%;
+}
+
+/* ─── Hero CTA Buttons (large) ─────────────────────── */
+.landing-actions {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.landing-btn {
+    padding: 1rem 2.2rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border-radius: 50px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+
+/* These reuse the .btn-signup / .btn-login styles above */
+
+/* ─── Hero Image / Graphic ─────────────────────────── */
+.landing-image-container {
+    position: relative;
+    perspective: 1200px;
+    margin-top: 3rem;
+}
+
+.hero-img-wrapper {
+    position: relative;
+    border-radius: 20px;
+    padding: 10px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+    transform: rotateY(-15deg) rotateX(5deg);
+    transform-style: preserve-3d;
+    animation: float 6s ease-in-out infinite;
+    z-index: 2;
+}
+
+.landing-image {
+    width: 100%;
+    border-radius: 15px;
+    display: block;
+    opacity: 0.9;
+}
+
+/* ─── Floating Badges ──────────────────────────────── */
+.floating-badge {
+    position: absolute;
+    background: var(--dark-surface);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    padding: 0.8rem 1.2rem;
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    color: #fff;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    z-index: 3;
+    animation: float-badge 8s ease-in-out infinite;
+}
+
+.badge-1 { top: -20px; right: -20px; animation-delay: 0s; }
+.badge-2 {
+    bottom: 40px;
+    left: -30px;
+    animation-delay: 1.5s;
+    background: rgba(0, 136, 255, 0.15);
+    border-color: rgba(0, 136, 255, 0.3);
+}
+
+.floating-badge i        { color: var(--neon-teal); font-size: 1.2rem; }
+.badge-2 i               { color: var(--neon-blue); }
+
+/* ─── Glow behind image ────────────────────────────── */
+.glow-effect {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 100%; height: 100%;
+    background: radial-gradient(circle, rgba(0, 255, 204, 0.15) 0%, transparent 60%);
+    transform: translate(-50%, -50%);
+    z-index: 0;
+    filter: blur(50px);
+}
+
+/* ─── Keyframes ────────────────────────────────────── */
+@keyframes float {
+    0%   { transform: translateY(0px)   rotateY(-15deg) rotateX(5deg); }
+    50%  { transform: translateY(-20px) rotateY(-10deg) rotateX(8deg); }
+    100% { transform: translateY(0px)   rotateY(-15deg) rotateX(5deg); }
+}
+
+@keyframes float-badge {
+    0%   { transform: translateY(0px);  }
+    50%  { transform: translateY(-15px);}
+    100% { transform: translateY(0px);  }
+}
+
+/* ─── Scroll-Reveal Animation ──────────────────────── */
+.reveal-up {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.8s cubic-bezier(0.5, 0, 0, 1);
+}
+.reveal-up.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ─── Features Section ─────────────────────────────── */
+.features-section {
+    padding: 5rem 0;
+    background: linear-gradient(180deg, transparent, rgba(5, 8, 16, 0.95) 100%);
+    position: relative;
+    z-index: 2;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.section-title {
+    font-size: clamp(2rem, 3vw, 2.5rem);
+    font-weight: 800;
+    margin-bottom: 1rem;
+}
+
+.feature-card {
+    background: var(--dark-surface);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.feature-card:hover {
+    transform: translateY(-10px);
+    border-color: var(--neon-teal);
+    box-shadow: 0 15px 30px rgba(0, 255, 204, 0.15);
+}
+
+.feature-icon {
+    width: 70px;
+    height: 70px;
+    margin: 0 auto 1.5rem;
+    background: linear-gradient(135deg, rgba(0, 255, 204, 0.1), rgba(0, 136, 255, 0.1));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: var(--neon-teal);
+    border: 1px solid rgba(0, 255, 204, 0.3);
+    transition: all 0.3s ease;
+}
+
+.feature-card:hover .feature-icon {
+    background: var(--neon-teal);
+    color: #000;
+    box-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
+}
+
+.feature-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.feature-desc {
+    color: #a0aec0;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+/* ─── Footer ───────────────────────────────────────── */
+.landing-footer {
+    background: #030408;
+    padding: 3rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    position: relative;
+    z-index: 2;
+}
+
+.footer-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1.5rem;
+}
+
+.footer-logo i    { color: var(--neon-teal); font-size: 1.5rem; }
+.footer-logo span { font-weight: 800; font-size: 1.2rem; color: #fff; }
+
+.footer-text {
+    color: #64748b;
+    font-size: 0.9rem;
+    max-width: 300px;
+}
+
+.footer-links h5 {
+    font-weight: 700;
+    margin-bottom: 1.2rem;
+    font-size: 1.1rem;
+}
+
+.footer-links ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-links li { margin-bottom: 0.8rem; }
+
+.footer-links a {
+    color: #94a3b8;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+.footer-links a:hover { color: var(--neon-teal); }
+
+.footer-bottom {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+/* ─── LTR (English) layout overrides ──────────────── */
+[dir="ltr"] .landing-hero      { text-align: left; }
+[dir="ltr"] .landing-actions   { justify-content: flex-start; }
+[dir="ltr"] .hero-subtitle     { margin-right: auto; margin-left: 0; }
+[dir="ltr"] .d-flex.align-items-center.gap-4.mt-5 { justify-content: flex-start; }
+[dir="ltr"] .footer-bottom     { flex-direction: row; }
+
+/* LTR icon margin swap */
+[dir="ltr"] .ms-1 { margin-left: 0 !important; margin-right: 0.25rem !important; }
+[dir="ltr"] .ms-2 { margin-left: 0 !important; margin-right: 0.5rem  !important; }
+[dir="ltr"] .fab.fa-whatsapp.ms-2,
+[dir="ltr"] .fas.fa-phone.ms-2,
+[dir="ltr"] .fas.fa-envelope.ms-2 {
+    margin-right: 0.4rem !important;
+    margin-left: 0 !important;
+}
+
+/* ─── Responsive ───────────────────────────────────── */
+@media (max-width: 991px) {
+    .landing-hero {
+        text-align: center;
+        padding-top: 7rem;
+    }
+    .hero-subtitle {
+        max-width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .landing-actions { justify-content: center; }
+    .hero-img-wrapper {
+        transform: rotateY(0deg) rotateX(0deg);
+        animation: float-mobile 6s ease-in-out infinite;
+        margin-top: 1rem;
+    }
+    .badge-1 { top: -15px; right: 10px; }
+    .badge-2 { bottom: 20px; left: 10px; }
+
+    @keyframes float-mobile {
+        0%   { transform: translateY(0px);  }
+        50%  { transform: translateY(-15px);}
+        100% { transform: translateY(0px);  }
+    }
+}
+
+@media (max-width: 576px) {
+    .nav-actions            { gap: 0.5rem; }
+    .nav-actions .btn       { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+    .nav-actions span       { display: none; }
+    .nav-actions i          { margin: 0 !important; }
+    .landing-actions        { flex-direction: column; gap: 1rem; }
+    .landing-btn            { width: 100%; }
+}

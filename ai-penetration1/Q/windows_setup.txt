@@ -1,0 +1,231 @@
+========================================================
+  HOW TO RUN THE PROJECT LOCALLY ON WINDOWS
+  (Step-by-Step from GitHub)
+========================================================
+ STEP 1 — INSTALL REQUIRED SOFTWARE
+========================================================
+
+ Install the following tools (one time only):
+
+ 1. Git
+    Download: https://git-scm.com/download/win
+    → Run installer, keep all default options
+    → Verify: open CMD and type:  git --version
+
+ 2. Python 3.10 or newer
+    Download: https://www.python.org/downloads/
+    ⚠️  IMPORTANT: Check "Add Python to PATH" during install
+    → Verify: open CMD and type:  python --version
+
+ 3. Docker Desktop
+    Download: https://www.docker.com/products/docker-desktop
+    → Install and RESTART your computer after
+    → Open Docker Desktop and wait until it says "Engine running"
+    → Verify: open CMD and type:  docker --version
+
+ 4. Nmap
+    Download: https://nmap.org/download#windows
+    → Run the .exe installer, keep all defaults
+    → Verify: open CMD and type:  nmap --version
+
+ 5. SQLMap (via pip — no separate download needed)
+    → You will install this in Step 4 automatically
+
+ 6. WhatWeb (optional — uses simulation if missing)
+    Requires Ruby: https://rubyinstaller.org/downloads/
+    After Ruby install, open CMD and run:
+      gem install whatweb
+    → If you skip this, WhatWeb runs in simulation mode only
+
+
+
+========================================================
+ STEP 3 — CREATE PYTHON VIRTUAL ENVIRONMENT
+========================================================
+
+ Inside the project folder, run:
+
+   cd backend
+   python -m venv .venv
+
+ Then activate it:
+
+   .venv\Scripts\activate
+
+ You should see (.venv) appear at the start of your prompt.
+ ✅ Keep this window open for all remaining steps.
+
+
+========================================================
+ STEP 4 — INSTALL PYTHON PACKAGES
+========================================================
+
+ With the virtual environment active, run:
+
+   pip install -r requirements.txt
+
+ Wait for all packages to download and install.
+ This may take 2–5 minutes depending on your internet speed.
+
+
+========================================================
+ STEP 5 — SET UP ENVIRONMENT FILE
+========================================================
+
+ In the backend folder, create a file named:  .env
+
+ Paste the following content into it:
+
+   DJANGO_SECRET_KEY=local-dev-secret-key-change-this
+   DEBUG=True
+   ALLOWED_HOSTS=localhost,127.0.0.1
+   DB_ENGINE=django.db.backends.sqlite3
+   SIGNUP_ACCESS_CODE=penta12@
+   FRONTEND_ORIGINS=http://localhost:5000,http://127.0.0.1:5000
+   OPENAI_API_KEY=YOUR_OPENAI_KEY_HERE
+   OPENAI_MODEL=gpt-4o-mini
+   ZAP_API_URL=http://127.0.0.1:8080
+   ZAP_API_KEY=
+   WHATWEB_BINARY=whatweb
+
+ ⚠️  Replace YOUR_OPENAI_KEY_HERE with your real key,
+     or leave the field empty to use fallback reports.
+
+
+========================================================
+ STEP 6 — START OWASP ZAP (Docker)
+========================================================
+
+ Make sure Docker Desktop is open and running, then run:
+
+   docker run -d --name zap-daemon -p 8080:8080 ^
+     ghcr.io/zaproxy/zaproxy:bare ^
+     zap.sh -daemon -host 0.0.0.0 -port 8080 ^
+     -config api.disablekey=true ^
+     -config api.addrs.addr.name=.* ^
+     -config api.addrs.addr.regex=true
+
+ Wait 15 seconds, then verify ZAP is running:
+
+   curl http://127.0.0.1:8080/JSON/core/view/version/
+
+ You should see something like: {"version":"2.x.x"}
+
+ NEXT TIME (already set up):
+   To start ZAP again after a reboot:
+     docker start zap-daemon
+
+
+========================================================
+ STEP 7 — RUN DATABASE MIGRATIONS
+========================================================
+
+ In your CMD (with .venv active), run:
+
+   python manage.py migrate
+
+ You will see lines like:
+   Applying scanner.0001_initial... OK
+   Applying axes.0001_initial... OK
+   etc.
+
+
+========================================================
+ STEP 8 — CREATE YOUR ACCOUNT (first time only)
+========================================================
+
+ Option A — Use Django shell to create a superuser:
+
+   python manage.py createsuperuser
+
+ Follow the prompts (email, password).
+
+ Option B — Sign up through the website:
+   The signup access code is:  penta12@
+
+
+========================================================
+ STEP 9 — START THE BACKEND SERVER
+========================================================
+
+ Run:
+
+   python manage.py runserver 0.0.0.0:5000
+
+ You should see:
+   Django version 4.2.x
+   Starting development server at http://0.0.0.0:5000/
+
+
+========================================================
+ STEP 10 — OPEN THE WEBSITE
+========================================================
+
+ Open your browser and go to:
+
+   http://localhost:5000
+
+ → Login with your account
+ → Access code for signup: penta12@
+
+
+========================================================
+ TOOL STATUS CHECK
+========================================================
+
+ After logging in, check tool status at:
+
+   http://localhost:5000/api/status
+
+ Or in CMD:
+   curl http://localhost:5000/api/status
+
+ Expected output:
+   nmap     → online  (if nmap is installed)
+   sqlmap   → online  (if sqlmap is installed)
+   whatweb  → online  (if whatweb/Ruby is installed)
+   owaspzap → online  (if ZAP Docker is running)
+
+ Any tool showing "offline" will use simulation mode.
+
+
+========================================================
+ EVERY TIME YOU REBOOT YOUR PC — DO THIS:
+========================================================
+
+ 1. Open Docker Desktop and wait for "Engine running"
+
+ 2. Start ZAP container:
+      docker start zap-daemon
+
+ 3. Open CMD, go to project folder:
+      cd ai-penetration1\backend
+      .venv\Scripts\activate
+      python manage.py runserver 0.0.0.0:5000
+
+ 4. Open browser → http://localhost:5000
+
+
+========================================================
+ TROUBLESHOOTING
+========================================================
+
+ Problem: "python is not recognized"
+ Fix: Reinstall Python and check "Add to PATH"
+
+ Problem: "docker is not recognized"
+ Fix: Restart PC after Docker Desktop install
+
+ Problem: ZAP says "offline" in tool status
+ Fix: Run:  docker start zap-daemon
+      Then wait 15 seconds and refresh
+
+ Problem: Port 5000 already in use
+ Fix: Change port:  python manage.py runserver 0.0.0.0:5001
+      Then open: http://localhost:5001
+
+ Problem: "No module named ..."
+ Fix: Make sure venv is activated (.venv\Scripts\activate)
+      Then run:  pip install -r requirements.txt
+
+========================================================

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-locale="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="i18n-page-title" content="signup.page.title">
+    <title>AI Penetration - إنشاء حساب</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link id="inter-font-link" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body class="auth-page auth-page-signup">
+
+
+    <div class="auth-shell">
+        <div class="auth-card">
+            <div class="row g-0">
+
+                <!-- Left panel: form -->
+                <div class="col-lg-7">
+                    <section class="auth-panel auth-form-panel">
+                        <div class="auth-topline">
+                            <div>
+                                <div class="auth-form-eyebrow" data-i18n="signup.form.eyebrow">تسجيل مقيّد</div>
+                                <h1 class="auth-form-title" data-i18n="signup.form.title">إنشاء حساب معتمد</h1>
+                            </div>
+                            <a id="loginLink" class="auth-topline-link" href="/login/?next={{ next_url|urlencode }}">
+                                <span data-i18n="signup.link.login">تسجيل الدخول</span>
+                                <i class="fas fa-arrow-right auth-nav-arrow"></i>
+                            </a>
+                        </div>
+
+                        <p class="auth-form-subtitle" data-i18n="signup.form.subtitle">سجّل مرة واحدة برمز الوصول الصحيح. بعد الموافقة، يستخدم الوصول البريد الإلكتروني وكلمة المرور فقط.</p>
+
+                        <div id="authMessage" class="alert auth-alert{% if not error %} d-none{% endif %}" role="alert" aria-live="polite">{{ error }}</div>
+
+                        <form id="signupForm" method="post" class="auth-form" novalidate>
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ next_url }}">
+
+                            <div class="auth-field-row">
+                                <div class="auth-field">
+                                    <label class="auth-field-label" for="fullName" data-i18n="signup.label.fullname">الاسم الكامل</label>
+                                    <div class="auth-input-shell">
+                                        <span class="auth-input-icon"><i class="fa-regular fa-user"></i></span>
+                                        <input class="form-control auth-input" id="fullName" name="full_name" type="text" value="{{ form_values.full_name }}"
+                                            placeholder="اسمك الكامل" data-i18n="signup.placeholder.fullname"
+                                            autocomplete="name" aria-describedby="signupFullNameFeedback" required>
+                                    </div>
+                                    <div class="auth-field-feedback" id="signupFullNameFeedback" aria-live="polite"></div>
+                                </div>
+
+                                <div class="auth-field">
+                                    <label class="auth-field-label" for="email" data-i18n="signup.label.email">البريد الإلكتروني</label>
+                                    <div class="auth-input-shell">
+                                        <span class="auth-input-icon"><i class="fa-regular fa-envelope"></i></span>
+                                        <input class="form-control auth-input" id="email" name="email" type="email" value="{{ form_values.email }}"
+                                            placeholder="you@example.com" data-i18n="signup.placeholder.email"
+                                            autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false"
+                                            aria-describedby="signupEmailFeedback" required>
+                                    </div>
+                                    <div class="auth-field-feedback" id="signupEmailFeedback" aria-live="polite"></div>
+                                </div>
+                            </div>
+
+                            <div class="auth-field-row">
+                                <div class="auth-field">
+                                    <label class="auth-field-label" for="password" data-i18n="signup.label.password">كلمة المرور</label>
+                                    <div class="auth-input-shell">
+                                        <span class="auth-input-icon"><i class="fa-solid fa-lock"></i></span>
+                                        <input class="form-control auth-input" id="password" name="password" type="password"
+                                            placeholder="أنشئ كلمة مرور" data-i18n="signup.placeholder.password"
+                                            autocomplete="new-password"
+                                            aria-describedby="passwordStrengthText signupPasswordFeedback" required>
+                                        <button class="auth-input-action" type="button" data-toggle-password data-target="password" aria-label="Show password">
+                                            <i class="fa-regular fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="auth-strength" id="passwordStrengthMeter" data-level="0" aria-hidden="true">
+                                        <span></span><span></span><span></span><span></span>
+                                    </div>
+                                    <div class="auth-strength-text" id="passwordStrengthText"
+                                        data-i18n="signup.password.hint">استخدم 8+ أحرف، تشمل أحرفاً وأرقاماً ورمزاً.</div>
+                                    <div class="auth-field-feedback" id="signupPasswordFeedback" aria-live="polite"></div>
+                                </div>
+
+                                <div class="auth-field">
+                                    <label class="auth-field-label" for="confirmPassword" data-i18n="signup.label.confirm">تأكيد كلمة المرور</label>
+                                    <div class="auth-input-shell">
+                                        <span class="auth-input-icon"><i class="fa-solid fa-check-double"></i></span>
+                                        <input class="form-control auth-input" id="confirmPassword" name="confirm_password" type="password"
+                                            placeholder="أعد إدخال كلمة المرور" data-i18n="signup.placeholder.confirm"
+                                            autocomplete="new-password"
+                                            aria-describedby="passwordMatchText signupConfirmPasswordFeedback" required>
+                                        <button class="auth-input-action" type="button" data-toggle-password data-target="confirmPassword" aria-label="Show password confirmation">
+                                            <i class="fa-regular fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="auth-match-text" id="passwordMatchText" data-i18n="signup.confirm.hint">أعد إدخال نفس كلمة المرور للتأكيد.</div>
+                                    <div class="auth-field-feedback" id="signupConfirmPasswordFeedback" aria-live="polite"></div>
+                                </div>
+                            </div>
+
+                            <div class="auth-field">
+                                <label class="auth-field-label" for="accessCode" data-i18n="signup.label.access">رمز الوصول</label>
+                                <div class="auth-input-shell">
+                                    <span class="auth-input-icon"><i class="fa-solid fa-key"></i></span>
+                                    <input class="form-control auth-input" id="accessCode" name="access_code" type="text" value="{{ form_values.access_code }}"
+                                        placeholder="أدخل رمز الوصول" data-i18n="signup.placeholder.access"
+                                        autocomplete="off" autocapitalize="off" spellcheck="false"
+                                        aria-describedby="signupAccessCodeFeedback" required>
+                                </div>
+                                <div class="auth-field-feedback is-visible" id="signupAccessCodeFeedback"
+                                    data-i18n="signup.access.hint"
+                                    data-i18n-default-message="signup.access.hint"
+                                    aria-live="polite">إذا كنت تحتاج رمز وصول، استخدم تفاصيل الاتصال في هذه الصفحة قبل التسجيل.</div>
+                            </div>
+
+                            <button class="btn auth-submit" id="authSubmitButton" type="submit">
+                                <span data-i18n="signup.btn.submit">إنشاء الحساب</span>
+                                <i class="fas fa-arrow-right auth-nav-arrow"></i>
+                            </button>
+                        </form>
+
+                        <div class="auth-trust-row">
+                            <div class="auth-trust-item">
+                                <i class="fas fa-user-shield"></i>
+                                <span data-i18n="signup.trust.code">التحقق من رمز الوصول مرة واحدة</span>
+                            </div>
+                            <div class="auth-trust-item">
+                                <i class="fas fa-door-open"></i>
+                                <span data-i18n="signup.trust.login">تسجيل دخول عادي بعد التسجيل</span>
+                            </div>
+                        </div>
+
+                        <div class="auth-links">
+                            <span data-i18n="signup.links.prompt">مسجّل مسبقاً؟</span>
+                            <a id="loginLinkSecondary" href="/login/?next={{ next_url|urlencode }}" data-i18n="signup.links.login">تسجيل الدخول</a>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Right panel: info -->
+                <div class="col-lg-5">
+                    <section class="auth-panel auth-panel-primary">
+                        <div class="auth-brand">
+                            <div class="auth-logo"><i class="fas fa-user-shield"></i></div>
+                            <div class="auth-brand-copy">
+                                <div class="auth-brand-name">AI Penetration</div>
+                                <div class="auth-brand-sub" data-i18n="signup.brand.sub">تسجيل مقيّد</div>
+                            </div>
+                        </div>
+
+                        <div class="auth-badge">
+                            <i class="fas fa-key"></i>
+                            <span data-i18n="signup.badge">رمز الوصول مطلوب</span>
+                        </div>
+
+                        <h2 class="auth-title" data-i18n="signup.hero.title">تسجيل يعتمد الموافقة أولاً.</h2>
+                        <p class="auth-description" data-i18n="signup.hero.desc">تدفق التسجيل مقيّد بالتصميم. رمز وصول صالح يفتح إنشاء الحساب، ثم تنتقل المنصة إلى تجربة تسجيل دخول عادية.</p>
+
+                        <div class="auth-pill-row">
+                            <div class="auth-pill"><i class="fas fa-shield-check"></i><span data-i18n="signup.pill.controlled">تسجيل مُتحكّم</span></div>
+                            <div class="auth-pill"><i class="fas fa-bolt"></i><span data-i18n="signup.pill.fast">تسجيل دخول سريع بعده</span></div>
+                        </div>
+
+                        <div class="auth-preview-grid">
+                            <article class="auth-preview-card">
+                                <div class="auth-preview-label" data-i18n="signup.step1.label">الخطوة 1</div>
+                                <div class="auth-preview-value" data-i18n="signup.step1.value">طلب</div>
+                                <div class="auth-preview-note" data-i18n="signup.step1.note">احصل على رمز الوصول من تفاصيل الاتصال الموضحة أدناه.</div>
+                            </article>
+                            <article class="auth-preview-card">
+                                <div class="auth-preview-label" data-i18n="signup.step2.label">الخطوة 2</div>
+                                <div class="auth-preview-value" data-i18n="signup.step2.value">تسجيل</div>
+                                <div class="auth-preview-note" data-i18n="signup.step2.note">أنشئ الحساب مرة واحدة، ثم انتقل إلى تسجيل الدخول العادي.</div>
+                            </article>
+                        </div>
+
+                        <div class="auth-access-card">
+                            <div class="auth-access-eyebrow" data-i18n="signup.contact.eyebrow">تحتاج الرمز؟</div>
+                            <div class="auth-access-title" data-i18n="signup.contact.title">تواصل معنا</div>
+                            <div class="auth-access-copy" data-i18n="signup.contact.copy">إذا كنت تريد رمز وصول، تواصل معنا قبل محاولة التسجيل.</div>
+
+                            <div class="auth-contact-stack">
+                                <div class="auth-contact-card">
+                                    <i class="fas fa-user-tie"></i>
+                                    <div>
+                                        <div class="auth-contact-label" data-i18n="signup.contact.label.contact">اسم التواصل</div>
+                                        <div class="auth-contact-value">PentaScanner AI</div>
+                                    </div>
+                                </div>
+                                <div class="auth-contact-card">
+                                    <i class="fab fa-whatsapp"></i>
+                                    <div>
+                                        <div class="auth-contact-label" data-i18n="signup.contact.label.whatsapp">واتساب</div>
+                                        <div class="auth-contact-value"><a href="https://wa.me/201012568949" target="_blank" rel="noopener">{{ contact_whatsapp }}</a></div>
+                                    </div>
+                                </div>
+                                <div class="auth-contact-card">
+                                    <i class="fas fa-phone-volume"></i>
+                                    <div>
+                                        <div class="auth-contact-label" data-i18n="signup.contact.label.phone">الهاتف</div>
+                                        <div class="auth-contact-value"><a href="tel:+201558715284">{{ contact_phone }}</a></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+            </div>
+        </div>
+
+        <footer class="auth-page-footer" aria-label="Auth support">
+            <div class="auth-page-footer-copy" data-i18n="signup.footer.copy">دعم التسجيل المقيّد متاح قبل الموافقة على الحساب.</div>
+            <div class="auth-page-footer-links">
+                <a href="https://wa.me/201012568949" target="_blank" rel="noopener" data-i18n="signup.footer.whatsapp">دعم واتساب</a>
+                <a href="tel:+201558715284" data-i18n="signup.footer.call">الاتصال بالدعم</a>
+            </div>
+        </footer>
+    </div>
+
+    <script src="/js/i18n.js"></script>
+    <script src="/js/auth-ui.js"></script>
+    <script src="/js/auth.js"></script>
+</body>
+</html>

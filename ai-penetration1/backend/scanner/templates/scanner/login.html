@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-locale="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="i18n-page-title" content="login.page.title">
+    <title>AI Penetration - تسجيل الدخول</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link id="inter-font-link" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="auth-page auth-page-login">
+
+
+    <div class="auth-shell">
+        <div class="auth-card">
+            <div class="row g-0">
+
+                <!-- Left panel: info -->
+                <div class="col-lg-6 order-2 order-lg-1">
+                    <section class="auth-panel auth-panel-primary">
+                        <div class="auth-brand">
+                            <div class="auth-logo"><i class="fas fa-shield-halved"></i></div>
+                            <div class="auth-brand-copy">
+                                <div class="auth-brand-name">AI Penetration</div>
+                                <div class="auth-brand-sub" data-i18n="login.brand.sub">مساحة عمل آمنة للمشغلين</div>
+                            </div>
+                        </div>
+
+                        <div class="auth-badge">
+                            <i class="fas fa-lock"></i>
+                            <span data-i18n="login.badge">طبقة وصول آمنة</span>
+                        </div>
+
+                        <h1 class="auth-title" data-i18n="login.hero.title">العودة إلى مساحة العمل.</h1>
+                        <p class="auth-description" data-i18n="login.hero.desc">افتح لوحة التحكم المحمية، تتبع سجل الفحوصات، واستعرض نتائج الذكاء الاصطناعي من مساحة عمل واحدة.</p>
+
+                        <div class="auth-pill-row">
+                            <div class="auth-pill"><i class="fas fa-chart-line"></i><span data-i18n="login.pill.monitor">مراقبة الفحص المباشر</span></div>
+                            <div class="auth-pill"><i class="fas fa-brain"></i><span data-i18n="login.pill.ai">توصيات الذكاء الاصطناعي</span></div>
+                            <div class="auth-pill"><i class="fas fa-database"></i><span data-i18n="login.pill.api">وصول API محمي</span></div>
+                        </div>
+
+                        <div class="auth-preview-grid">
+                            <article class="auth-preview-card">
+                                <div class="auth-preview-label" data-i18n="login.card.session.label">حالة الجلسة</div>
+                                <div class="auth-preview-value" data-i18n="login.card.session.value">مقفل</div>
+                                <div class="auth-preview-note" data-i18n="login.card.session.note">تظل بيانات لوحة التحكم مخفية حتى اكتمال تسجيل الدخول.</div>
+                            </article>
+                            <article class="auth-preview-card">
+                                <div class="auth-preview-label" data-i18n="login.card.access.label">نوع الوصول</div>
+                                <div class="auth-preview-value" data-i18n="login.card.access.value">دخول واحد</div>
+                                <div class="auth-preview-note" data-i18n="login.card.access.note">يستخدم تسجيل الدخول البريد الإلكتروني وكلمة المرور فقط.</div>
+                            </article>
+                        </div>
+
+                        <ul class="auth-list">
+                            <li data-i18n="login.list.1">يتم تحميل النتائج المحمية فقط بعد التحقق من الجلسة.</li>
+                            <li data-i18n="login.list.2">تحمي نفس الجلسة تنفيذ الفحص واسترداد التقارير.</li>
+                            <li data-i18n="login.list.3">الاشتراك يتم بشكل منفصل، لذا يمكن للمستخدمين الدخول بتدفق عادي.</li>
+                        </ul>
+                    </section>
+                </div>
+
+                <!-- Right panel: form -->
+                <div class="col-lg-6 order-1 order-lg-2">
+                    <section class="auth-panel auth-form-panel">
+                        <div class="auth-topline">
+                            <div>
+                                <div class="auth-form-eyebrow" data-i18n="login.form.eyebrow">تسجيل دخول الأعضاء</div>
+                                <h2 class="auth-form-title" data-i18n="login.form.title">مرحباً بعودتك</h2>
+                            </div>
+                            <a id="signupLink" class="auth-topline-link" href="/signup/?next={{ next_url|urlencode }}">
+                                <span data-i18n="login.link.signup">إنشاء حساب</span>
+                                <i class="fas fa-arrow-right auth-nav-arrow"></i>
+                            </a>
+                        </div>
+
+                        <p class="auth-form-subtitle" data-i18n="login.form.subtitle">استخدم بريدك الإلكتروني وكلمة المرور للمتابعة إلى لوحة التحكم.</p>
+
+                        <div id="authMessage" class="alert auth-alert{% if not error %} d-none{% endif %}" role="alert" aria-live="polite">{{ error }}</div>
+
+                        <form id="loginForm" method="post" class="auth-form" novalidate>
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ next_url }}">
+
+                            <div class="auth-field">
+                                <label class="auth-field-label" for="email" data-i18n="login.label.email">البريد الإلكتروني</label>
+                                <div class="auth-input-shell">
+                                    <span class="auth-input-icon"><i class="fa-regular fa-envelope"></i></span>
+                                    <input class="form-control auth-input" id="email" name="email" type="email" value="{{ form_values.email }}"
+                                        placeholder="you@example.com" data-i18n="login.placeholder.email"
+                                        autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false"
+                                        aria-describedby="loginEmailFeedback" autofocus required>
+                                </div>
+                                <div class="auth-field-feedback" id="loginEmailFeedback" aria-live="polite"></div>
+                            </div>
+
+                            <div class="auth-field">
+                                <label class="auth-field-label" for="password" data-i18n="login.label.password">كلمة المرور</label>
+                                <div class="auth-input-shell">
+                                    <span class="auth-input-icon"><i class="fa-solid fa-key"></i></span>
+                                    <input class="form-control auth-input" id="password" name="password" type="password"
+                                        placeholder="أدخل كلمة مرورك" data-i18n="login.placeholder.password"
+                                        autocomplete="current-password" aria-describedby="loginPasswordFeedback" required>
+                                    <button class="auth-input-action" type="button" data-toggle-password data-target="password" aria-label="Show password">
+                                        <i class="fa-regular fa-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="auth-field-feedback is-visible" id="loginPasswordFeedback"
+                                    data-i18n="login.password.hint"
+                                    data-i18n-default-message="login.password.hint"
+                                    aria-live="polite">يستخدم تسجيل الدخول البريد الإلكتروني وكلمة المرور فقط. رموز الوصول تُفحص فقط أثناء التسجيل.</div>
+                            </div>
+
+                            <button class="btn auth-submit" id="authSubmitButton" type="submit">
+                                <span data-i18n="login.btn.submit">تسجيل الدخول</span>
+                                <i class="fas fa-arrow-right auth-nav-arrow"></i>
+                            </button>
+                        </form>
+
+                        <div class="auth-trust-row">
+                            <div class="auth-trust-item">
+                                <i class="fas fa-cookie-bite"></i>
+                                <span data-i18n="login.trust.session">وصول محمي بالجلسة</span>
+                            </div>
+                            <div class="auth-trust-item">
+                                <i class="fas fa-route"></i>
+                                <span data-i18n="login.trust.redirect">إعادة توجيه لصفحتك الأصلية</span>
+                            </div>
+                        </div>
+
+                        <div class="auth-links">
+                            <span data-i18n="login.links.prompt">تحتاج حساباً جديداً؟</span>
+                            <a id="signupLinkSecondary" href="/signup/?next={{ next_url|urlencode }}" data-i18n="login.links.create">أنشئ حساباً</a>
+                        </div>
+                    </section>
+                </div>
+
+            </div>
+        </div>
+
+        <footer class="auth-page-footer" aria-label="Auth support">
+            <div class="auth-page-footer-copy" data-i18n="login.footer.copy">تدفق وصول آمن للمشغلين المعتمدين.</div>
+            <div class="auth-page-footer-links">
+                <a href="https://wa.me/201012568949" target="_blank" rel="noopener" data-i18n="login.footer.whatsapp">دعم واتساب</a>
+                <a href="tel:+201558715284" data-i18n="login.footer.call">الاتصال بالدعم</a>
+            </div>
+        </footer>
+    </div>
+
+    <script src="/js/i18n.js"></script>
+    <script src="/js/auth-ui.js"></script>
+    <script src="/js/auth.js"></script>
+</body>
+</html>

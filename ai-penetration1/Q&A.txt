@@ -1,0 +1,83 @@
+========================================================
+  AI PENETRATION TOOL — Q&A REFERENCE
+========================================================
+
+────────────────────────────────────────────────────────
+Q: If I use a website NOT in the allowed list, will the
+   tool perform a penetration test on it?
+────────────────────────────────────────────────────────
+
+A: NO — It will be BLOCKED before scanning even starts.
+
+REASON:
+  Your project has a whitelist guard in services.py
+  called is_valid_target(). It checks the target before
+  any tool runs. If the target is not in the approved
+  list, the backend immediately returns:
+
+    {"error": "Target is not allowed. Use approved testing targets only."}
+
+  No scan happens. No tool runs. The request is rejected.
+
+────────────────────────────────────────────────────────
+ALLOWED TARGETS (Built-in Whitelist)
+────────────────────────────────────────────────────────
+
+  Domain / IP                  | Why It's Allowed
+  -----------------------------|----------------------------------
+  testphp.vulnweb.com          | Intentionally vulnerable PHP app
+                               | (by Acunetix — safe to test)
+  demo.testfire.net            | Intentionally vulnerable Java app
+                               | (by Altoro Mutual — safe to test)
+  localhost                    | Your own machine
+  127.x.x.x                   | Loopback addresses (your machine)
+  192.168.x.x                 | Your local network
+  10.x.x.x                    | Private network range
+  172.16.x.x – 172.31.x.x    | Private network range
+
+────────────────────────────────────────────────────────
+WHY WAS THIS RESTRICTION PUT IN PLACE?
+────────────────────────────────────────────────────────
+
+  1. LEGAL PROTECTION
+     Scanning any website without explicit written
+     permission from its owner is ILLEGAL in most
+     countries (e.g. Computer Fraud and Abuse Act in
+     the USA, Computer Misuse Act in the UK, etc.)
+
+  2. SAFETY
+     Prevents the tool from accidentally attacking
+     real production websites and causing damage.
+
+  3. ABUSE PREVENTION
+     Stops unauthorized use of your backend server
+     as a hacking tool against third parties.
+
+────────────────────────────────────────────────────────
+HOW TO ADD A NEW ALLOWED TARGET
+────────────────────────────────────────────────────────
+
+  Open: backend/scanner/services.py
+
+  Find this section:
+
+    ALLOWED_TEST_HOSTS = (
+        "testphp.vulnweb.com",
+        "demo.testfire.net",
+        "localhost",
+    )
+
+  Add your domain:
+
+    ALLOWED_TEST_HOSTS = (
+        "testphp.vulnweb.com",
+        "demo.testfire.net",
+        "localhost",
+        "your-own-lab-domain.com",   <-- add here
+    )
+
+  ⚠️  WARNING:
+  Only add domains or IPs that YOU OWN or have EXPLICIT
+  WRITTEN PERMISSION to test. Scanning without permission
+  is a criminal offense in most countries.
+========================================================
